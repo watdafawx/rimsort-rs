@@ -4,6 +4,7 @@
 //   eval <js>                    run JS in the page, print JSON result
 //   click <css-selector|x,y> [n] click element center (or viewport x,y); n=2 double-click
 //   shot [name]                  -> debug/screenshots/<name>.png (viewport, no OS involvement)
+//   drag <css|x,y> <dx> <dy>     press, move, release (pointer drags)
 //   key <Key>                    press a key on the focused element (e.g. Enter, Delete, ArrowDown)
 import fs from 'node:fs'
 import path from 'node:path'
@@ -56,6 +57,14 @@ if (cmd === 'eval') {
     await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...base })
     await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...base })
   }
+} else if (cmd === 'drag') {
+  // drag <css|x,y> <dx> <dy>: press on the target, move in steps, release
+  const [x, y] = await center(args[0])
+  const [dx, dy] = [Number(args[1]), Number(args[2])]
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 })
+  for (let i = 1; i <= 10; i++)
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x + (dx * i) / 10, y: y + (dy * i) / 10, button: 'left', buttons: 1 })
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + dx, y: y + dy, button: 'left', clickCount: 1 })
 } else if (cmd === 'key') {
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: args[0], code: args[0] })
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: args[0], code: args[0] })

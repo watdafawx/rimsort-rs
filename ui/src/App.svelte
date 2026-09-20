@@ -1,5 +1,6 @@
 <script lang="ts">
   import { convertFileSrc } from '@tauri-apps/api/core'
+  import { getCurrentWindow } from '@tauri-apps/api/window'
   import { open as pickFile, save as pickSave } from '@tauri-apps/plugin-dialog'
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
@@ -94,6 +95,52 @@
       menu = null
     }
   }
+
+  // ── resizable panes (persisted per viewer) ──────────────────────────
+  const LAYOUT_KEY = 'rimsort-rs.layout'
+  const layout = $state({ info: 280, split: 0.5 })
+  let bodyEl: HTMLElement
+  try {
+    Object.assign(layout, JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}'))
+  } catch {
+    /* storage unavailable or corrupt: keep defaults */
+  }
+
+  function startDrag(e: PointerEvent, which: 'info' | 'split') {
+    e.preventDefault()
+    const target = e.currentTarget as HTMLElement
+    target.setPointerCapture(e.pointerId)
+    const rect = bodyEl.getBoundingClientRect()
+    const move = (ev: PointerEvent) => {
+      if (which === 'info') {
+        layout.info = Math.max(160, Math.min(rect.width * 0.5, ev.clientX - rect.left))
+      } else {
+        const left = rect.left + layout.info + 6
+        const width = rect.width - layout.info - 12
+        layout.split = Math.max(0.2, Math.min(0.8, (ev.clientX - left) / width))
+      }
+    }
+    const up = () => {
+      target.removeEventListener('pointermove', move)
+      target.removeEventListener('pointerup', up)
+      try {
+        localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout))
+      } catch {
+        /* ignore */
+      }
+    }
+    target.addEventListener('pointermove', move)
+    target.addEventListener('pointerup', up)
+  }
+
+  // Warn before closing the window with unsaved list changes.
+  onMount(() => {
+    const un = getCurrentWindow().onCloseRequested((e) => {
+      if (app.dirty && !confirm('You have unsaved changes. Close without saving?'))
+        e.preventDefault()
+    })
+    return () => un.then((f) => f())
+  })
 
   onMount(() => {
     const unlisten = listenTasks()
@@ -249,7 +296,12 @@
   {#if view === 'log'}
     <div class="body single"><LogView /></div>
   {/if}
-  <main class="body" style:display={view === 'log' ? 'none' : undefined}>
+  <main
+    class="body"
+    bind:this={bodyEl}
+    style:display={view === 'log' ? 'none' : undefined}
+    style:grid-template-columns="{layout.info}px 6px {layout.split}fr 6px {1 - layout.split}fr"
+  >
     <aside class="info">
       {#if detail}
         {#if detail.preview}<img class="preview" src={convertFileSrc(detail.preview)} alt="" />{/if}
@@ -291,6 +343,12 @@
         <p class="dim">Select a mod to see its details.</p>
       {/if}
     </aside>
+    <div
+      class="gutter"
+      role="separator"
+      aria-orientation="vertical"
+      onpointerdown={(e) => startDrag(e, 'info')}
+    ></div>
 
     <ModList
       title="Inactive"
@@ -301,6 +359,12 @@
       onselect={select}
       oncontext={(r, ids, x, y) => openMenu('inactive', r, ids, x, y)}
     />
+    <div
+      class="gutter"
+      role="separator"
+      aria-orientation="vertical"
+      onpointerdown={(e) => startDrag(e, 'split')}
+    ></div>
     <ModList
       title="Active"
       listId="active"
@@ -457,10 +521,19 @@
   }
   .body {
     display: grid;
-    grid-template-columns: 280px 1fr 1fr;
-    gap: 0.6rem;
+    gap: 0;
     padding: 0.6rem;
     min-height: 0;
+  }
+  .gutter {
+    cursor: col-resize;
+    background: transparent;
+    touch-action: none;
+  }
+  .gutter:hover,
+  .gutter:active {
+    background: var(--accent);
+    opacity: 0.5;
   }
   .info {
     overflow: auto;
