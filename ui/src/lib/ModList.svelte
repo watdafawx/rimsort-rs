@@ -5,7 +5,7 @@
 
 <script lang="ts">
   import type { ModRow, Warning } from '../bindings'
-  import { describe, isError } from './store.svelte'
+  import { describe, inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
   const ROW = 28
 
@@ -35,6 +35,7 @@
 
   let query = $state('')
   let onlyWarn = $state(false)
+  let typeFilter = $state('')
   let scroller: HTMLDivElement
   let scrollTop = $state(0)
   let viewH = $state(400)
@@ -45,7 +46,8 @@
 
   const shown = $derived.by(() => {
     const q = query.trim().toLowerCase()
-    const base = onlyWarn ? rows.filter((r) => warnings[r.id] || r.unsupported_version) : rows
+    const typed = typeFilter ? rows.filter((r) => r.mod_type === typeFilter) : rows
+    const base = onlyWarn ? typed.filter((r) => warnings[r.id] || r.unsupported_version) : typed
     if (!q) return base
     return base.filter(
       (r) =>
@@ -167,7 +169,32 @@
 <section class="list">
   <header>
     <strong>{title}</strong>
-    <span class="count">{query ? `${shown.length} / ` : ''}{rows.length}</span>
+    <span class="count"
+      >{shown.length !== rows.length ? `${shown.length} / ` : ''}{rows.length}</span
+    >
+    <select bind:value={typeFilter} title="Filter by mod source" aria-label="Filter by type">
+      <option value="">All</option>
+      {#each Object.entries(TYPE) as [k, [tag]] (k)}<option value={k}>{tag}</option>{/each}
+    </select>
+    {#if listId === 'inactive'}
+      <select
+        title="Sort"
+        aria-label="Sort by"
+        value={inactiveSort.key}
+        onchange={(e) => setInactiveSort(e.currentTarget.value as SortKey, inactiveSort.desc)}
+      >
+        <option value="name">Name</option>
+        <option value="author">Author</option>
+        <option value="modified">Modified</option>
+        <option value="type">Type</option>
+      </select>
+      <button
+        class="dir"
+        title={inactiveSort.desc ? 'Descending' : 'Ascending'}
+        onclick={() => setInactiveSort(inactiveSort.key, !inactiveSort.desc)}
+        >{inactiveSort.desc ? '↓' : '↑'}</button
+      >
+    {/if}
     <label class="only" title="Show only mods with warnings"
       ><input type="checkbox" bind:checked={onlyWarn} />⚠</label
     >

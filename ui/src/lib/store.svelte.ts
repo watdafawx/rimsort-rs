@@ -95,6 +95,43 @@ export function revalidate(delay = 60) {
 
 const byName = (a: ModRow, b: ModRow) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())
 
+// ── inactive list ordering (the active list's order is the load order) ──
+export type SortKey = 'name' | 'author' | 'modified' | 'type'
+const SORT_KEY = 'rimsort-rs.inactiveSort'
+export const inactiveSort = $state({ key: 'name' as SortKey, desc: false })
+try {
+  Object.assign(inactiveSort, JSON.parse(localStorage.getItem(SORT_KEY) ?? '{}'))
+} catch {
+  /* storage unavailable: defaults */
+}
+
+function inactiveCmp(a: ModRow, b: ModRow): number {
+  let c = 0
+  switch (inactiveSort.key) {
+    case 'author':
+      c = a.authors.toLowerCase().localeCompare(b.authors.toLowerCase())
+      break
+    case 'modified':
+      c = a.modified - b.modified
+      break
+    case 'type':
+      c = a.mod_type.localeCompare(b.mod_type)
+      break
+  }
+  return (inactiveSort.desc ? -c : c) || byName(a, b)
+}
+
+export function setInactiveSort(key: SortKey, desc: boolean) {
+  inactiveSort.key = key
+  inactiveSort.desc = desc
+  app.inactive = app.inactive.slice().sort(inactiveCmp)
+  try {
+    localStorage.setItem(SORT_KEY, JSON.stringify(inactiveSort))
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function loadSettings() {
   app.settings = await call(commands.getSettings())
 }
@@ -110,7 +147,7 @@ export async function refresh() {
     if (t.status !== 'finished') return
     const l = await call(commands.getLists())
     app.active = l.active
-    app.inactive = l.inactive
+    app.inactive = l.inactive.slice().sort(inactiveCmp)
     app.missing = l.missing
     app.gameVersion = l.game_version
     app.scanMs = l.scan_ms
@@ -155,7 +192,7 @@ export function disable(ids: string[]) {
   if (!moving.length) return
   remember()
   app.active = app.active.filter((r) => !set.has(r.id))
-  app.inactive = [...app.inactive, ...moving].sort(byName)
+  app.inactive = [...app.inactive, ...moving].sort(inactiveCmp)
   pushActive()
 }
 
@@ -202,7 +239,7 @@ export async function importList(path: string) {
   redoStack.length = 0
   syncDepth()
   app.active = l.active
-  app.inactive = l.inactive
+  app.inactive = l.inactive.slice().sort(inactiveCmp)
   app.missing = l.missing
   app.dirty = true
   revalidate(0)

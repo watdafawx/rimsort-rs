@@ -184,6 +184,8 @@ export type ModRow = {
 	valid: boolean,
 	unsupported_version: boolean,
 	published_file_id: string | null,
+	/**  Folder modification time, Unix seconds (0 when unknown). */
+	modified: number,
 };
 
 /**  All rule sources for one mod, for the rule editor. */

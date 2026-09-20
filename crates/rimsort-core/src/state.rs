@@ -330,6 +330,7 @@ impl AppState {
             valid: m.valid,
             unsupported_version: unsupported,
             published_file_id: m.published_file_id.clone(),
+            modified: m.mtime.clamp(0, i64::from(u32::MAX)) as u32,
         }
     }
 

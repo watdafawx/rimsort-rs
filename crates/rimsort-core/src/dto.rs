@@ -50,6 +50,8 @@ pub struct ModRow {
     pub valid: bool,
     pub unsupported_version: bool,
     pub published_file_id: Option<String>,
+    /// Folder modification time, Unix seconds (0 when unknown).
+    pub modified: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
