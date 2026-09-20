@@ -239,16 +239,34 @@ export function patchRow(id: string, patch: Partial<ModRow>) {
   }
 }
 
-/** Download Workshop items via SteamCMD; rescans afterwards unless there are unsaved edits. */
-export async function downloadMods(ids: string[]) {
-  if (app.jobTask) return toast('A download is already running')
-  app.jobTask = await call(commands.downloadMods(ids))
+/** Run a background job shown in the status bar; rescan afterwards unless there are unsaved edits. */
+async function runJob(start: Promise<number>, doneText: string): Promise<boolean> {
+  app.jobTask = await start
   const t = await waitTask(app.jobTask)
   app.jobTask = 0
-  if (t.status !== 'finished') return
-  toast(`Downloaded ${ids.length} mod${ids.length === 1 ? '' : 's'}`, 4000)
+  if (t.status !== 'finished') return false
+  toast(doneText, 4000)
   if (!app.dirty) await refresh()
   else external.changed = 'mods'
+  return true
+}
+
+/** Download Workshop items via SteamCMD. */
+export async function downloadMods(ids: string[]) {
+  if (app.jobTask) return toast('A download is already running')
+  await runJob(
+    call(commands.downloadMods(ids)),
+    `Downloaded ${ids.length} mod${ids.length === 1 ? '' : 's'}`,
+  )
+}
+
+/** Clone GitHub repositories into the local mods folder. */
+export async function cloneGitMods(urls: string[]) {
+  if (app.jobTask) return toast('A download is already running')
+  await runJob(
+    call(commands.cloneGitMods(urls)),
+    `Cloned ${urls.length} repositor${urls.length === 1 ? 'y' : 'ies'}`,
+  )
 }
 
 /** Move a mod's folder to the recycle bin (after the caller confirmed) and refresh the lists. */

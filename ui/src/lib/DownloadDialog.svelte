@@ -1,17 +1,26 @@
 <script lang="ts">
-  import { app, downloadMods } from './store.svelte'
+  import { app, cloneGitMods, downloadMods } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
   let text = $state('')
 
-  /** Workshop ids from any mix of URLs (`?id=123`, `CommunityFilePage/123`) and bare numbers. */
+  const GITHUB = /https:\/\/github\.com\/[\w-]+\/[\w-][\w.-]*?(?:\.git)?(?=[\s/?#]|$)/g
+  /** GitHub repository links (deduplicated). */
+  const repos = $derived([...new Set(text.match(GITHUB) ?? [])])
+  /** Workshop ids from URLs (`?id=123`, `CommunityFilePage/123`) and bare numbers; GitHub links excluded. */
   const ids = $derived([
-    ...new Set([...text.matchAll(/(?:[?&]id=|CommunityFilePage\/|\b)(\d{6,})/g)].map((m) => m[1])),
+    ...new Set(
+      [...text.replace(GITHUB, ' ').matchAll(/(?:[?&]id=|CommunityFilePage\/|\b)(\d{6,})/g)].map(
+        (m) => m[1],
+      ),
+    ),
   ])
 
   async function go() {
+    const [w, g] = [ids, repos]
     onclose()
-    await downloadMods(ids)
+    if (w.length) await downloadMods(w)
+    if (g.length) await cloneGitMods(g)
   }
 </script>
 
@@ -20,24 +29,36 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Download from Steam Workshop"
+    aria-label="Download mods"
     tabindex="-1"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Download from the Steam Workshop</h2>
+    <h2>Download mods</h2>
     <p class="dim">
-      Paste Workshop links or ids (one per line or separated by spaces). Items are fetched with
-      SteamCMD into your local mods folder.
+      Paste Steam Workshop links/ids (fetched with SteamCMD) and/or GitHub repository links (cloned
+      with git), one per line. Everything lands in your local mods folder.
     </p>
     <textarea
       rows="5"
       bind:value={text}
-      placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077"></textarea>
-    <div class="dim">{ids.length} item{ids.length === 1 ? '' : 's'} detected</div>
+      placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077&#10;https://github.com/Zetrith/Prepatcher"
+    ></textarea>
+    <div class="dim summary">
+      {ids.length} Workshop item{ids.length === 1 ? '' : 's'} · {repos.length} GitHub repositor{repos.length ===
+      1
+        ? 'y'
+        : 'ies'}
+    </div>
     <footer>
       <button onclick={onclose}>Cancel</button>
-      <button class="primary" disabled={!ids.length || !!app.jobTask} onclick={go}>Download</button>
+      <button
+        class="primary"
+        disabled={(!ids.length && !repos.length) || !!app.jobTask}
+        onclick={go}
+      >
+        Download
+      </button>
     </footer>
   </div>
 </div>

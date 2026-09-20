@@ -660,6 +660,20 @@ Total # of mods: {}
         crate::gitmods::update(&path)
     }
 
+    /// Clone GitHub repositories into the instance's local mods folder (background task).
+    pub fn clone_git_mods(self: &Arc<Self>, urls: Vec<String>) -> Result<TaskId> {
+        let inst = self.current_instance()?;
+        if inst.local_folder.is_empty() {
+            return Err(Error::Other(
+                "Local mods folder is not set (Settings → Locations)".into(),
+            ));
+        }
+        Ok(self.tasks.spawn(move |ctx| {
+            crate::gitmods::clone_github(&urls, std::path::Path::new(&inst.local_folder), ctx)
+                .map(|_| ())
+        }))
+    }
+
     /// Download Workshop items with SteamCMD into the instance's local mods folder (background task).
     pub fn download_mods(self: &Arc<Self>, ids: Vec<String>) -> Result<TaskId> {
         let inst = self.current_instance()?;

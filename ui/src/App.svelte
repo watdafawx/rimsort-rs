@@ -284,9 +284,7 @@
       {#if listMenu}
         <div class="menu" role="menu" style:position="absolute" style:top="100%" style:left="0">
           <button role="menuitem" onclick={doImport}>Import list…</button>
-          <button role="menuitem" onclick={() => (showDownload = true)}>
-            Download from Workshop…
-          </button>
+          <button role="menuitem" onclick={() => (showDownload = true)}> Download mods… </button>
           <hr />
           {#each EXPORTS as x (x.format)}
             <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
