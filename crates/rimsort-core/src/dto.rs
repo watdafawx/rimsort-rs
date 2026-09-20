@@ -109,3 +109,13 @@ pub enum ExportFormat {
     /// Human-readable `Name [package.id][url]` report.
     Report,
 }
+
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct LogChunk {
+    pub path: String,
+    pub text: String,
+    /// Pass back as `offset` on the next read.
+    pub offset: u32,
+    /// Replace the displayed log instead of appending.
+    pub reset: bool,
+}

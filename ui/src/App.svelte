@@ -5,6 +5,7 @@
   import { onMount } from 'svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
+  import LogView from './lib/LogView.svelte'
   import ModList from './lib/ModList.svelte'
   import SettingsDialog from './lib/SettingsDialog.svelte'
   import {
@@ -28,6 +29,7 @@
   let detail = $state<ModDetail | null>(null)
   let showMissing = $state(false)
   let listMenu = $state(false)
+  let view = $state<'mods' | 'log'>('mods')
 
   async function doImport() {
     const p = await pickFile({
@@ -201,6 +203,13 @@
     </div>
     <button id="undo" onclick={undo} disabled={!app.undoDepth} title="Undo (Ctrl+Z)">↶</button>
     <button id="redo" onclick={redo} disabled={!app.redoDepth} title="Redo (Ctrl+Y)">↷</button>
+    <button
+      id="logtab"
+      class:active={view === 'log'}
+      onclick={() => (view = view === 'log' ? 'mods' : 'log')}
+    >
+      📜 Log
+    </button>
     <button id="clear" onclick={clearActive} disabled={!app.loaded}>Clear</button>
   </nav>
 
@@ -216,7 +225,10 @@
     </div>
   {/if}
 
-  <main class="body">
+  {#if view === 'log'}
+    <div class="body single"><LogView /></div>
+  {/if}
+  <main class="body" style:display={view === 'log' ? 'none' : undefined}>
     <aside class="info">
       {#if detail}
         {#if detail.preview}<img class="preview" src={convertFileSrc(detail.preview)} alt="" />{/if}
@@ -443,6 +455,12 @@
     width: 100%;
     border-radius: 4px;
     margin-bottom: 0.5rem;
+  }
+  .body.single {
+    grid-template-columns: 1fr;
+  }
+  button.active {
+    background: var(--sel);
   }
   .dropdown {
     position: relative;

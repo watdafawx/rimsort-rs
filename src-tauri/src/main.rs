@@ -3,8 +3,8 @@
 use rimsort_core::{
     AppState, ErrorDto, ModId, TaskEvent, TaskId, TaskManager, TaskSink,
     dto::{
-        ExportFormat, ImportResult, InstanceDto, ListsView, ModDetail, SaveResult, SettingsView,
-        SortResultDto,
+        ExportFormat, ImportResult, InstanceDto, ListsView, LogChunk, ModDetail, SaveResult,
+        SettingsView, SortResultDto,
     },
     paths::DetectedPaths,
 };
@@ -164,6 +164,12 @@ async fn export_modlist_text(state: St<'_>, format: ExportFormat) -> Cmd<String>
 
 #[tauri::command]
 #[specta::specta]
+async fn read_player_log(state: St<'_>, offset: Option<u32>) -> Cmd<LogChunk> {
+    Ok(state.read_player_log(offset)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn launch_game(state: St<'_>) -> Cmd<()> {
     Ok(state.launch_game()?)
 }
@@ -195,6 +201,7 @@ fn builder() -> Builder<Wry> {
             import_modlist,
             export_modlist,
             export_modlist_text,
+            read_player_log,
             launch_game,
             cancel_task
         ])

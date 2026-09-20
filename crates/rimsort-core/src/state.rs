@@ -3,8 +3,8 @@
 use crate::{
     Error, ModId, Result, TaskId, TaskManager,
     dto::{
-        ExportFormat, ImportResult, InstanceDto, ListsView, ModDetail, ModRow, SaveResult,
-        SettingsView, SortResultDto,
+        ExportFormat, ImportResult, InstanceDto, ListsView, LogChunk, ModDetail, ModRow,
+        SaveResult, SettingsView, SortResultDto,
     },
     modlist_io,
     mods::{self, ModIndex, ScanConfig},
@@ -477,6 +477,25 @@ Total # of mods: {}
     pub fn export_modlist(&self, path: &str, format: ExportFormat) -> Result<()> {
         std::fs::write(path, self.export_text(format))?;
         Ok(())
+    }
+
+    /// Read Player.log incrementally (`None` = tail of the file).
+    pub fn read_player_log(&self, offset: Option<u32>) -> Result<LogChunk> {
+        let inst = self.current_instance()?;
+        let path = crate::logs::player_log_path(&inst.config_folder)
+            .ok_or_else(|| Error::Other("Config folder is not set".into()))?;
+        let c = crate::logs::read_from(&path, offset.map(u64::from)).map_err(|_| {
+            Error::Other(format!(
+                "No Player.log at {} (run the game once)",
+                path.display()
+            ))
+        })?;
+        Ok(LogChunk {
+            path: path.to_string_lossy().into_owned(),
+            text: c.text,
+            offset: c.offset.min(u64::from(u32::MAX)) as u32,
+            reset: c.reset,
+        })
     }
 
     pub fn launch_game(&self) -> Result<()> {

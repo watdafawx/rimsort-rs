@@ -45,6 +45,7 @@ export const commands = {
 	importModlist: (path: string) => typedError<ImportResult, ErrorDto>(__TAURI_INVOKE("import_modlist", { path })),
 	exportModlist: (path: string, format: ExportFormat) => typedError<null, ErrorDto>(__TAURI_INVOKE("export_modlist", { path, format })),
 	exportModlistText: (format: ExportFormat) => typedError<string, ErrorDto>(__TAURI_INVOKE("export_modlist_text", { format })),
+	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	cancelTask: (id: number) => typedError<null, ErrorDto>(__TAURI_INVOKE("cancel_task", { id })),
 };
@@ -107,6 +108,15 @@ export type ListsView = {
 	/**  Entries loaded from the community / user rules databases (0 = not found). */
 	community_rules: number,
 	user_rules: number,
+};
+
+export type LogChunk = {
+	path: string,
+	text: string,
+	/**  Pass back as `offset` on the next read. */
+	offset: number,
+	/**  Replace the displayed log instead of appending. */
+	reset: boolean,
 };
 
 export type ModDetail = {
