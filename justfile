@@ -47,7 +47,7 @@ golden-setup:
 
 # Sort your real install with RimSort's Python code and ours; fails if the orders differ
 golden:
-    $env:RUST_SORT_OUT = "$PWD/debug/rust_sorted.json"; cargo test -p rimsort-core --test real_machine -- --ignored
+    $env:RIMSORT_RS_DATA_DIR = "$PWD/debug/testdata"; $env:RUST_SORT_OUT = "$PWD/debug/rust_sorted.json"; cargo test -p rimsort-core --test real_machine -- --ignored
     debug/pyvenv/Scripts/python.exe tests/golden/py_sort.py "$env:LOCALAPPDATA/RimSort/settings.json" debug/py_sorted.json
     node tests/golden/compare.mjs debug/py_sorted.json debug/rust_sorted.json
 
