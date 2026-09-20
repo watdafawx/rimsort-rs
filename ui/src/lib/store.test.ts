@@ -2,10 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModRow } from '../bindings'
 
 const ok = <T>(data: T) => Promise.resolve({ status: 'ok' as const, data })
-const setActive = vi.fn<(ids: string[]) => Promise<ReturnType<typeof okNull>>>(() => okNull())
-function okNull() {
-  return ok(null)
-}
+const setActive = vi.fn((ids: string[]) => (void ids, ok(null)))
 
 vi.mock('../bindings', () => ({
   commands: {
