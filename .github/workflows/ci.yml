@@ -59,3 +59,6 @@ jobs:
       - name: prettier
         run: npm run fmt:check
         working-directory: ui
+      - name: vitest
+        run: npm test
+        working-directory: ui

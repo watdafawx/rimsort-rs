@@ -13,6 +13,7 @@ build:
 
 test:
     cargo test --workspace
+    npm --prefix ui test
 
 lint:
     cargo clippy --workspace --all-targets -- -D warnings
