@@ -366,7 +366,12 @@
         {#if app.warnings[detail.id]}
           <ul class="warnings">
             {#each app.warnings[detail.id] as w (w.kind + w.other)}
-              <li class:err={isError(w)}>{describe(w)}</li>
+              <li class:err={isError(w)}>
+                {describe(w)}
+                {#if w.kind === 'UseThisInstead' && w.other}
+                  <button class="link" onclick={() => openUrl(workshopUrl(w.other))}>Open</button>
+                {/if}
+              </li>
             {/each}
           </ul>
         {/if}

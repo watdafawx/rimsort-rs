@@ -75,6 +75,8 @@ export function describe(w: Warning): string {
       return `Should load after: ${w.other_name}`
     case 'VersionMismatch':
       return 'Does not list support for this game version'
+    case 'UseThisInstead':
+      return `A maintained replacement exists: ${w.other_name}`
   }
 }
 

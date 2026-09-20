@@ -330,7 +330,9 @@ export type WarningKind =
 /**  This mod should load after `other`, but comes before it. */
 "LoadAfter" | 
 /**  Mod doesn't list support for the running game version. */
-"VersionMismatch";
+"VersionMismatch" | 
+/**  A maintained replacement exists: `other` = its Workshop id, `other_name` = "Name by Author". */
+"UseThisInstead";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

@@ -23,6 +23,8 @@ pub enum WarningKind {
     LoadAfter,
     /// Mod doesn't list support for the running game version.
     VersionMismatch,
+    /// A maintained replacement exists: `other` = its Workshop id, `other_name` = "Name by Author".
+    UseThisInstead,
 }
 
 impl WarningKind {
@@ -199,6 +201,21 @@ pub fn validate(
         }
         if version_mismatch(m, &index.game_version, src) {
             push(WarningKind::VersionMismatch, "", "");
+        }
+        if let Some(r) = m
+            .published_file_id
+            .as_ref()
+            .and_then(|p| src.replacements.get(p))
+        {
+            w.push(Warning {
+                kind: WarningKind::UseThisInstead,
+                other: r.new_workshop_id.clone(),
+                other_name: if r.new_author.is_empty() {
+                    r.new_name.clone()
+                } else {
+                    format!("{} by {}", r.new_name, r.new_author)
+                },
+            });
         }
 
         if !w.is_empty() {
@@ -416,6 +433,27 @@ mod tests {
             Some("99")
         );
         assert_eq!(workshop_id("nothing"), None);
+    }
+
+    #[test]
+    fn use_this_instead_warning() {
+        let mut src = RuleSources::default();
+        src.replacements.insert(
+            "111".into(),
+            crate::rules::Replacement {
+                new_name: "New".into(),
+                new_author: "Me".into(),
+                new_workshop_id: "222".into(),
+                ..Default::default()
+            },
+        );
+        let mods = vec![
+            mk("old", |m| m.published_file_id = Some("111".into())),
+            mk("fine", |_| {}),
+        ];
+        let w = run(mods, &["old", "fine"], &src);
+        assert_eq!(w["old"], [WarningKind::UseThisInstead]);
+        assert!(!w.contains_key("fine"));
     }
 
     #[test]

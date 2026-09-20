@@ -96,6 +96,50 @@ impl ExternalRules {
     }
 }
 
+/// A recommended replacement ("Use This Instead" database), keyed by the old Workshop id.
+#[derive(Debug, Clone, Default)]
+pub struct Replacement {
+    pub new_name: String,
+    pub new_author: String,
+    pub new_workshop_id: String,
+    pub new_package_id: String,
+}
+
+/// Parse `{"rules": [{"oldWorkshopId": ..., "newName": ...}]}` (optionally gzipped bytes).
+pub fn parse_replacements(bytes: &[u8]) -> Result<HashMap<String, Replacement>> {
+    use std::io::Read;
+    let text = if bytes.starts_with(&[0x1f, 0x8b]) {
+        let mut s = String::new();
+        flate2::read::GzDecoder::new(bytes)
+            .read_to_string(&mut s)
+            .map_err(|e| crate::Error::Other(format!("replacements gzip: {e}")))?;
+        s
+    } else {
+        xml::decode_bytes(bytes)
+    };
+    let v: Value = serde_json::from_str(text.trim_start_matches('﻿'))?;
+    let get = |r: &Value, k: &str| r.get(k).and_then(Value::as_str).unwrap_or("").to_owned();
+    Ok(v.get("rules")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|r| {
+            let old = get(r, "oldWorkshopId");
+            (!old.is_empty()).then(|| {
+                (
+                    old,
+                    Replacement {
+                        new_name: get(r, "newName"),
+                        new_author: get(r, "newAuthor"),
+                        new_workshop_id: get(r, "newWorkshopId"),
+                        new_package_id: get(r, "newPackageId"),
+                    },
+                )
+            })
+        })
+        .collect())
+}
+
 /// Everything external that influences sorting and validation.
 #[derive(Debug, Default, Clone)]
 pub struct RuleSources {
@@ -105,6 +149,8 @@ pub struct RuleSources {
     pub ignored: HashSet<String>,
     /// Package ids that should never get a version-mismatch warning.
     pub no_version_warning: HashSet<String>,
+    /// old Workshop id -> recommended replacement.
+    pub replacements: HashMap<String, Replacement>,
 }
 
 /// Our own writable copy of `file` (seeded from RimSort's on first write so existing rules carry over).
@@ -327,6 +373,22 @@ impl RuleSources {
                 .collect();
         }
 
+        if let Some(p) = resolve(
+            settings,
+            "external_use_this_instead",
+            "external_use_this_instead_repo_path",
+            "replacements.json.gz",
+        ) && let Ok(bytes) = fs::read(&p)
+        {
+            match parse_replacements(&bytes) {
+                Ok(r) => {
+                    tracing::info!("use-this-instead: {} entries", r.len());
+                    out.replacements = r;
+                }
+                Err(e) => tracing::warn!("use-this-instead unreadable: {e}"),
+            }
+        }
+
         // ModIdsToFix.xml, possibly in a per-version subfolder.
         if let Some(base) = resolve(
             settings,
@@ -391,6 +453,19 @@ mod tests {
         assert!(a.contains("p.q"));
         let b = write_ignore(Some(&a), "p.q", false).unwrap();
         assert!(!b.contains("p.q") && b.contains("description"));
+    }
+
+    #[test]
+    fn parses_replacements_plain_and_gzip() {
+        use std::io::Write;
+        let json = r#"{"version":1,"rules":[{"oldWorkshopId":"111","newName":"New","newAuthor":"Me","newWorkshopId":"222","newPackageId":"a.b"},{"nope":1}]}"#;
+        let plain = parse_replacements(json.as_bytes()).unwrap();
+        assert_eq!(plain["111"].new_workshop_id, "222");
+        let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+        gz.write_all(json.as_bytes()).unwrap();
+        let packed = gz.finish().unwrap();
+        assert_eq!(parse_replacements(&packed).unwrap()["111"].new_name, "New");
+        assert!(parse_replacements(b"garbage").is_err());
     }
 
     #[test]
