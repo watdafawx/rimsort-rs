@@ -182,6 +182,19 @@ async fn set_mod_meta(state: St<'_>, id: ModId, meta: rimsort_core::dto::MetaDto
 
 #[tauri::command]
 #[specta::specta]
+async fn update_git_mod(state: St<'_>, id: ModId) -> Cmd<String> {
+    let state = state.inner().clone();
+    let out = tauri::async_runtime::spawn_blocking(move || state.update_git_mod(id))
+        .await
+        .map_err(|e| ErrorDto {
+            kind: "error".into(),
+            message: e.to_string(),
+        })??;
+    Ok(out)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -245,6 +258,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            update_git_mod,
             set_mod_meta,
             delete_mod,
             get_duplicates,

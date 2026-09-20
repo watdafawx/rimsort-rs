@@ -2,6 +2,7 @@
 
 pub mod dto;
 mod error;
+pub mod gitmods;
 pub mod launch;
 pub mod logs;
 pub mod meta;

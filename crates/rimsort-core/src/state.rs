@@ -647,6 +647,19 @@ Total # of mods: {}
         Ok(())
     }
 
+    /// `git pull --ff-only` in a git-cloned mod's folder. Blocking: call from a worker thread.
+    pub fn update_git_mod(&self, id: ModId) -> Result<String> {
+        let path = {
+            let s = self.session.read().unwrap();
+            let m = s
+                .index
+                .get(id)
+                .ok_or_else(|| Error::Other("Unknown mod".into()))?;
+            m.path.clone()
+        };
+        crate::gitmods::update(&path)
+    }
+
     /// Package ids installed more than once, with which copy is active.
     pub fn duplicates(&self) -> Vec<crate::dto::DupGroup> {
         use crate::dto::{DupCopy, DupGroup};

@@ -95,6 +95,11 @@
     navigator.clipboard.writeText(text).then(() => toast('Copied', 1500))
   const workshopUrl = (pfid: string) =>
     `https://steamcommunity.com/sharedfiles/filedetails/?id=${pfid}`
+  async function updateGit(id: string) {
+    toast('Running git pull…', 2000)
+    const out = await call(commands.updateGitMod(id))
+    toast(out.split('\n').slice(-1)[0] || 'Up to date', 5000)
+  }
   const steamUrl = (pfid: string) => `steam://url/CommunityFilePage/${pfid}`
   function act(fn: () => unknown) {
     try {
@@ -503,6 +508,11 @@
         onclick={() => act(() => openUrl(d!.url))}>Open mod URL</button
       >
       <hr />
+      {#if menu.row.mod_type === 'Git'}
+        <button role="menuitem" onclick={() => act(() => updateGit(menu!.row.id))}>
+          Update (git pull)
+        </button>
+      {/if}
       <button role="menuitem" onclick={() => act(() => (editMetaId = menu!.row.id))}
         >Color, tags &amp; notes…</button
       >
