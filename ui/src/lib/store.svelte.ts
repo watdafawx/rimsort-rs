@@ -19,7 +19,46 @@ export const app = $state({
   errorCount: 0,
   warningCount: 0,
   communityRules: 0,
+  /** Undo/redo depth, for enabling the buttons. */
+  undoDepth: 0,
+  redoDepth: 0,
 })
+
+type Snap = { active: ModRow[]; inactive: ModRow[] }
+const undoStack: Snap[] = []
+const redoStack: Snap[] = []
+const HISTORY_MAX = 100
+
+const snap = (): Snap => ({ active: app.active, inactive: app.inactive })
+function syncDepth() {
+  app.undoDepth = undoStack.length
+  app.redoDepth = redoStack.length
+}
+/** Call before mutating the lists. */
+function remember() {
+  undoStack.push(snap())
+  if (undoStack.length > HISTORY_MAX) undoStack.shift()
+  redoStack.length = 0
+  syncDepth()
+}
+function restore(s: Snap) {
+  app.active = s.active
+  app.inactive = s.inactive
+  pushActive()
+  syncDepth()
+}
+export function undo() {
+  const s = undoStack.pop()
+  if (!s) return
+  redoStack.push(snap())
+  restore(s)
+}
+export function redo() {
+  const s = redoStack.pop()
+  if (!s) return
+  undoStack.push(snap())
+  restore(s)
+}
 
 export const isError = (w: Warning) => w.kind === 'MissingDependency' || w.kind === 'Incompatible'
 
@@ -75,6 +114,8 @@ export async function refresh() {
     app.duplicates = l.duplicate_package_ids
     app.communityRules = l.community_rules
     app.dirty = false
+    undoStack.length = redoStack.length = 0
+    syncDepth()
     app.loaded = true
     revalidate(0)
   } finally {
@@ -96,6 +137,7 @@ export function enable(ids: string[], beforeId: string | null = null) {
   if (bad.length) toast(`Can't enable invalid mod: ${bad[0].name}`)
   const ok = moving.filter((r) => r.valid)
   if (!ok.length) return
+  remember()
   app.inactive = app.inactive.filter((r) => !set.has(r.id) || !r.valid)
   const at = beforeId ? app.active.findIndex((r) => r.id === beforeId) : -1
   const next = app.active.slice()
@@ -108,6 +150,7 @@ export function disable(ids: string[]) {
   const set = new Set(ids)
   const moving = app.active.filter((r) => set.has(r.id))
   if (!moving.length) return
+  remember()
   app.active = app.active.filter((r) => !set.has(r.id))
   app.inactive = [...app.inactive, ...moving].sort(byName)
   pushActive()
@@ -115,6 +158,7 @@ export function disable(ids: string[]) {
 
 /** Reorder within the active list: put `ids` (in their current relative order) before `beforeId`. */
 export function moveActive(ids: string[], beforeId: string | null) {
+  remember()
   const set = new Set(ids)
   const moving = app.active.filter((r) => set.has(r.id))
   const rest = app.active.filter((r) => !set.has(r.id))
@@ -130,12 +174,18 @@ export function clearActive() {
 }
 
 export async function sort() {
+  const before = snap()
   const r = await call(commands.sortActive())
   app.cycles = r.cycles
   if (!r.ok) return toast('Sort failed: circular dependencies found')
   const l = await call(commands.getLists())
+  if (r.changed) {
+    undoStack.push(before)
+    redoStack.length = 0
+    syncDepth()
+    app.dirty = true
+  }
   app.active = l.active
-  if (r.changed) app.dirty = true
   revalidate(0)
   toast(r.changed ? 'Sorted' : 'Already sorted', 2500)
 }

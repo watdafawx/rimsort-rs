@@ -15,9 +15,11 @@
     enable,
     loadSettings,
     moveActive,
+    redo,
     refresh,
     save,
     sort,
+    undo,
   } from './lib/store.svelte'
 
   let showSettings = $state(false)
@@ -103,7 +105,14 @@
 
 <svelte:window
   onclick={() => (menu = null)}
-  onkeydown={(e) => e.key === 'Escape' && (menu = null)}
+  onkeydown={(e) => {
+    if (e.key === 'Escape') menu = null
+    if ((e.ctrlKey || e.metaKey) && !(e.target instanceof HTMLInputElement)) {
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) undo()
+      else if (k === 'y' || (k === 'z' && e.shiftKey)) redo()
+    }
+  }}
   oncontextmenu={(e) =>
     e.target instanceof Element && !e.target.closest('.row') && e.preventDefault()}
 />
@@ -132,6 +141,8 @@
     <button id="sort" onclick={sort} disabled={!app.loaded}>⇅ Sort</button>
     <button id="save" class="primary" onclick={save} disabled={!app.loaded}>💾 Save</button>
     <button id="run" onclick={run} disabled={!app.loaded}>▶ Run</button>
+    <button id="undo" onclick={undo} disabled={!app.undoDepth} title="Undo (Ctrl+Z)">↶</button>
+    <button id="redo" onclick={redo} disabled={!app.redoDepth} title="Redo (Ctrl+Y)">↷</button>
     <button id="clear" onclick={clearActive} disabled={!app.loaded}>Clear</button>
   </nav>
 
