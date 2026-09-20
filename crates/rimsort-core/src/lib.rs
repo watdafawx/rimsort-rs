@@ -16,6 +16,7 @@ pub mod rules;
 pub mod settings;
 pub mod sort;
 mod state;
+pub mod steamcmd;
 mod task;
 pub mod validate;
 pub mod watch;

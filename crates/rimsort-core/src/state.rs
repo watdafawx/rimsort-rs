@@ -660,6 +660,32 @@ Total # of mods: {}
         crate::gitmods::update(&path)
     }
 
+    /// Download Workshop items with SteamCMD into the instance's local mods folder (background task).
+    pub fn download_mods(self: &Arc<Self>, ids: Vec<String>) -> Result<TaskId> {
+        let inst = self.current_instance()?;
+        if inst.local_folder.is_empty() {
+            return Err(Error::Other(
+                "Local mods folder is not set (Settings → Locations)".into(),
+            ));
+        }
+        Ok(self.tasks.spawn(move |ctx| {
+            let failed = crate::steamcmd::download(
+                &ids,
+                std::path::Path::new(&inst.local_folder),
+                &crate::steamcmd::install_dir(),
+                ctx,
+            )?;
+            if failed.is_empty() {
+                Ok(())
+            } else {
+                Err(Error::Other(format!(
+                    "Steam could not provide: {}",
+                    failed.join(", ")
+                )))
+            }
+        }))
+    }
+
     /// Package ids installed more than once, with which copy is active.
     pub fn duplicates(&self) -> Vec<crate::dto::DupGroup> {
         use crate::dto::{DupCopy, DupGroup};

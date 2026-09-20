@@ -44,6 +44,7 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	downloadMods: (ids: string[]) => typedError<number, ErrorDto>(__TAURI_INVOKE("download_mods", { ids })),
 	updateDatabases: () => typedError<DbResult[], ErrorDto>(__TAURI_INVOKE("update_databases")),
 	updateGitMod: (id: ModId) => typedError<string, ErrorDto>(__TAURI_INVOKE("update_git_mod", { id })),
 	setModMeta: (id: ModId, meta: MetaDto) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_mod_meta", { id, meta })),

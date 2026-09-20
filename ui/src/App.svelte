@@ -423,7 +423,12 @@
   </main>
 
   <footer class="status">
-    {#if app.scanning}
+    {#if app.jobTask && tasks[app.jobTask]}
+      {@const j = tasks[app.jobTask]}
+      <span class="job">⬇ {j.msg || 'Working…'}</span>
+      <progress max={j.total || 1} value={j.done}></progress>
+      <button onclick={() => call(commands.cancelTask(j.id))}>Cancel</button>
+    {:else if app.scanning}
       <span>Scanning… {scan?.done ?? 0} / {scan?.total ?? '?'}</span>
       <progress max={scan?.total || 1} value={scan?.done ?? 0}></progress>
     {:else if app.loaded}
@@ -586,6 +591,12 @@
   }
   .dirty {
     color: #ecc94b;
+  }
+  .job {
+    max-width: 50ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .banner.external {
     display: flex;

@@ -3,7 +3,7 @@
   import { onMount } from 'svelte'
   import type { MissingDep } from '../bindings'
   import { call, commands, toast } from './ipc.svelte'
-  import { app, enable } from './store.svelte'
+  import { app, downloadMods, enable } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
   let deps = $state<MissingDep[]>([])
@@ -65,7 +65,11 @@
               {#if d.installed}
                 <button class="primary" onclick={() => enableOne(d)}>Enable</button>
               {:else}
-                <span class="dim">not installed</span>
+                <button
+                  disabled={!d.workshop_id || !!app.jobTask}
+                  title="Download with SteamCMD into your local mods folder"
+                  onclick={() => downloadMods([d.workshop_id!])}>Download</button
+                >
               {/if}
               <button
                 disabled={!d.workshop_id}

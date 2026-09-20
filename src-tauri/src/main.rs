@@ -208,6 +208,12 @@ async fn update_databases(state: St<'_>) -> Cmd<Vec<rimsort_core::dbupdate::DbRe
 
 #[tauri::command]
 #[specta::specta]
+async fn download_mods(state: St<'_>, ids: Vec<String>) -> Cmd<TaskId> {
+    Ok(state.inner().download_mods(ids)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -271,6 +277,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            download_mods,
             update_databases,
             update_git_mod,
             set_mod_meta,

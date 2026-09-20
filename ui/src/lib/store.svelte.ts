@@ -12,6 +12,8 @@ export const app = $state({
   dirty: false,
   scanning: false,
   scanTask: 0,
+  /** Background job (e.g. SteamCMD download) shown in the status bar; 0 = none. */
+  jobTask: 0,
   cycles: [] as string[][],
   loaded: false,
   /** Active-list warnings keyed by mod id. */
@@ -235,6 +237,18 @@ export function patchRow(id: string, patch: Partial<ModRow>) {
       app[key] = next
     }
   }
+}
+
+/** Download Workshop items via SteamCMD; rescans afterwards unless there are unsaved edits. */
+export async function downloadMods(ids: string[]) {
+  if (app.jobTask) return toast('A download is already running')
+  app.jobTask = await call(commands.downloadMods(ids))
+  const t = await waitTask(app.jobTask)
+  app.jobTask = 0
+  if (t.status !== 'finished') return
+  toast(`Downloaded ${ids.length} mod${ids.length === 1 ? '' : 's'}`, 4000)
+  if (!app.dirty) await refresh()
+  else external.changed = 'mods'
 }
 
 /** Move a mod's folder to the recycle bin (after the caller confirmed) and refresh the lists. */
