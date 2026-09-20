@@ -7,6 +7,7 @@
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, external, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
   import ConfirmDelete from './lib/ConfirmDelete.svelte'
+  import DownloadDialog from './lib/DownloadDialog.svelte'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MetaEditor from './lib/MetaEditor.svelte'
@@ -18,6 +19,7 @@
     app,
     clearActive,
     deleteMod,
+    downloadMods,
     describe,
     isError,
     disable,
@@ -38,6 +40,7 @@
   let listMenu = $state(false)
   let showDeps = $state(false)
   let showDups = $state(false)
+  let showDownload = $state(false)
   let deleting = $state<ModDetail | null>(null)
   let editRuleId = $state<string | null>(null)
   let editMetaId = $state<string | null>(null)
@@ -281,6 +284,9 @@
       {#if listMenu}
         <div class="menu" role="menu" style:position="absolute" style:top="100%" style:left="0">
           <button role="menuitem" onclick={doImport}>Import list…</button>
+          <button role="menuitem" onclick={() => (showDownload = true)}>
+            Download from Workshop…
+          </button>
           <hr />
           {#each EXPORTS as x (x.format)}
             <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
@@ -375,6 +381,11 @@
                 {describe(w)}
                 {#if w.kind === 'UseThisInstead' && w.other}
                   <button class="link" onclick={() => openUrl(workshopUrl(w.other))}>Open</button>
+                  <button
+                    class="link"
+                    disabled={!!app.jobTask}
+                    onclick={() => downloadMods([w.other])}>Download</button
+                  >
                 {/if}
               </li>
             {/each}
@@ -556,6 +567,8 @@
       }}
     />
   {/if}
+
+  {#if showDownload}<DownloadDialog onclose={() => (showDownload = false)} />{/if}
 
   {#if showDups}<Duplicates onclose={() => (showDups = false)} />{/if}
 
