@@ -164,6 +164,12 @@ async fn set_ignored(state: St<'_>, id: ModId, ignored: bool) -> Cmd<()> {
 
 #[tauri::command]
 #[specta::specta]
+async fn get_duplicates(state: St<'_>) -> Cmd<Vec<rimsort_core::dto::DupGroup>> {
+    Ok(state.duplicates())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -227,6 +233,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            get_duplicates,
             get_mod_rules,
             set_user_rule,
             set_ignored,

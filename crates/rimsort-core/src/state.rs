@@ -573,6 +573,38 @@ Total # of mods: {}
         })
     }
 
+    /// Package ids installed more than once, with which copy is active.
+    pub fn duplicates(&self) -> Vec<crate::dto::DupGroup> {
+        use crate::dto::{DupCopy, DupGroup};
+        let s = self.session.read().unwrap();
+        let active: HashSet<ModId> = s.active.ids.iter().copied().collect();
+        let mut groups: std::collections::BTreeMap<&str, Vec<&mods::Mod>> = Default::default();
+        for m in s.index.mods.iter().filter(|m| m.valid) {
+            groups.entry(m.package_id.as_str()).or_default().push(m);
+        }
+        let mut out: Vec<DupGroup> = groups
+            .into_iter()
+            .filter(|(_, v)| v.len() > 1)
+            .map(|(pid, v)| DupGroup {
+                package_id: pid.to_owned(),
+                name: v[0].name.clone(),
+                copies: v
+                    .iter()
+                    .map(|m| DupCopy {
+                        id: m.id,
+                        path: m.path.to_string_lossy().into_owned(),
+                        mod_type: m.mod_type,
+                        published_file_id: m.published_file_id.clone(),
+                        mod_version: m.mod_version.clone(),
+                        active: active.contains(&m.id),
+                    })
+                    .collect(),
+            })
+            .collect();
+        out.sort_by_key(|g| g.name.to_lowercase());
+        out
+    }
+
     // ── rules editing ───────────────────────────────────────────────────
 
     pub fn mod_rules(&self, id: ModId) -> Option<ModRulesView> {

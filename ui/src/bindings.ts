@@ -41,6 +41,7 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	getDuplicates: () => typedError<DupGroup[], ErrorDto>(__TAURI_INVOKE("get_duplicates")),
 	getModRules: (id: ModId) => typedError<{
 	package_id: string,
 	name: string,
@@ -80,6 +81,23 @@ export type DetectedPaths = {
 	workshop_folder: string | null,
 	/**  Human-readable explanation of what was/wasn't found. */
 	notes: string[],
+};
+
+/**  One installed copy of a package that exists in several places. */
+export type DupCopy = {
+	id: ModId,
+	path: string,
+	mod_type: ModType,
+	published_file_id: string | null,
+	mod_version: string,
+	/**  This copy is the one currently in the active list. */
+	active: boolean,
+};
+
+export type DupGroup = {
+	package_id: string,
+	name: string,
+	copies: DupCopy[],
 };
 
 /**  UI-facing error: `{ kind, message }`. Commands return `Result<T, ErrorDto>`. */

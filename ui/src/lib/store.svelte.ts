@@ -208,6 +208,21 @@ export function moveActive(ids: string[], beforeId: string | null) {
   pushActive()
 }
 
+/** Make the given installed copy the active one for its package id (swaps in place). */
+export async function useCopy(id: string) {
+  const row = app.inactive.find((r) => r.id === id)
+  if (!row) return
+  const at = app.active.findIndex((r) => r.package_id === row.package_id)
+  if (at < 0) return enable([id])
+  remember()
+  const old = app.active[at]
+  const next = app.active.slice()
+  next[at] = row
+  app.active = next
+  app.inactive = [...app.inactive.filter((r) => r.id !== id), old].sort(inactiveCmp)
+  await pushActive()
+}
+
 /** Disable everything except the base game and official expansions. */
 export function clearActive() {
   disable(app.active.filter((r) => r.mod_type !== 'Ludeon').map((r) => r.id))

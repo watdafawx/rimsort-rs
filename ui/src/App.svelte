@@ -6,6 +6,7 @@
   import { onMount } from 'svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, external, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
+  import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MissingDeps from './lib/MissingDeps.svelte'
   import RuleEditor from './lib/RuleEditor.svelte'
@@ -33,6 +34,7 @@
   let showMissing = $state(false)
   let listMenu = $state(false)
   let showDeps = $state(false)
+  let showDups = $state(false)
   let editRuleId = $state<string | null>(null)
   let view = $state<'mods' | 'log'>('mods')
 
@@ -391,7 +393,9 @@
           ? `${app.communityRules} community rules`
           : 'no community rules'}</span
       >
-      {#if app.duplicates}<span class="dim">{app.duplicates} duplicate package ids</span>{/if}
+      {#if app.duplicates}<button class="link dim" onclick={() => (showDups = true)}
+          >{app.duplicates} duplicate package ids</button
+        >{/if}
     {:else}
       <span class="dim">No mods loaded — check Settings → Locations.</span>
     {/if}
@@ -470,6 +474,8 @@
   {/if}
 
   {#if editRuleId}<RuleEditor id={editRuleId} onclose={() => (editRuleId = null)} />{/if}
+
+  {#if showDups}<Duplicates onclose={() => (showDups = false)} />{/if}
 
   {#if showDeps}<MissingDeps onclose={() => (showDeps = false)} />{/if}
 

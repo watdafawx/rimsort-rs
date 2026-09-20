@@ -1,0 +1,150 @@
+<script lang="ts">
+  import { revealItemInDir } from '@tauri-apps/plugin-opener'
+  import { onMount } from 'svelte'
+  import type { DupGroup } from '../bindings'
+  import { call, commands } from './ipc.svelte'
+  import { app, useCopy } from './store.svelte'
+
+  let { onclose }: { onclose: () => void } = $props()
+  let groups = $state<DupGroup[]>([])
+
+  const load = async () => (groups = await call(commands.getDuplicates()))
+  onMount(load)
+
+  const LABEL: Record<string, string> = {
+    Ludeon: 'Ludeon',
+    SteamWorkshop: 'Steam Workshop',
+    Local: 'Local',
+    SteamCmd: 'SteamCMD',
+    Git: 'Git',
+    Unknown: 'Unknown',
+  }
+
+  async function use(id: string) {
+    await useCopy(id)
+    await load()
+  }
+</script>
+
+<div class="backdrop" role="presentation" onclick={onclose}>
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Duplicate mods"
+    tabindex="-1"
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.key === 'Escape' && onclose()}
+  >
+    <h2>Duplicate mods</h2>
+    {#if !groups.length}
+      <p class="dim">No package id is installed more than once.</p>
+    {:else}
+      <p class="dim">
+        RimWorld identifies mods by package id only, so exactly one copy of each can be active.
+        {app.dirty ? 'Changes are unsaved until you press Save.' : ''}
+      </p>
+      <div class="groups">
+        {#each groups as g (g.package_id)}
+          <section>
+            <strong>{g.name}</strong> <span class="dim">{g.package_id}</span>
+            {#each g.copies as c (c.id)}
+              <div class="copy" class:active={c.active}>
+                <div class="what">
+                  <span class="src">{LABEL[c.mod_type] ?? c.mod_type}</span>
+                  {#if c.mod_version}<span class="dim">v{c.mod_version}</span>{/if}
+                  <div class="path dim">{c.path}</div>
+                </div>
+                <div class="acts">
+                  {#if c.active}<span class="using">in use</span>
+                  {:else}<button onclick={() => use(c.id)}>Use this copy</button>{/if}
+                  <button onclick={() => revealItemInDir(c.path)}>Open folder</button>
+                </div>
+              </div>
+            {/each}
+          </section>
+        {/each}
+      </div>
+    {/if}
+    <footer><button onclick={onclose}>Close</button></footer>
+  </div>
+</div>
+
+<style>
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: grid;
+    place-items: center;
+    z-index: 10;
+  }
+  .dialog {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    width: min(820px, 94vw);
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+  .groups {
+    overflow: auto;
+    display: grid;
+    gap: 0.7rem;
+  }
+  section {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.5rem 0.7rem;
+    background: var(--panel);
+    display: grid;
+    gap: 0.35rem;
+  }
+  .copy {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 5px;
+    border: 1px solid transparent;
+  }
+  .copy.active {
+    border-color: var(--accent);
+  }
+  .what {
+    min-width: 0;
+  }
+  .path {
+    font-size: 0.75rem;
+    word-break: break-all;
+  }
+  .src {
+    font-weight: 600;
+  }
+  .acts {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex: none;
+  }
+  .using {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .dim {
+    color: var(--dim);
+    font-size: 0.85em;
+  }
+  footer {
+    display: flex;
+    justify-content: flex-end;
+  }
+</style>

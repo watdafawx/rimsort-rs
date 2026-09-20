@@ -160,3 +160,22 @@ pub struct ModRulesView {
     /// Warnings suppressed for this mod (`ignore.json`).
     pub ignored: bool,
 }
+
+/// One installed copy of a package that exists in several places.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct DupCopy {
+    pub id: ModId,
+    pub path: String,
+    pub mod_type: ModType,
+    pub published_file_id: Option<String>,
+    pub mod_version: String,
+    /// This copy is the one currently in the active list.
+    pub active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct DupGroup {
+    pub package_id: String,
+    pub name: String,
+    pub copies: Vec<DupCopy>,
+}
