@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
   --bg: #16181d;
   --panel: #1e2128;
   --line: #303541;
@@ -11,8 +11,21 @@
   font-family: system-ui, 'Segoe UI', sans-serif;
   font-size: 14px;
 }
+/* Light palette: explicit choice, or "auto" when the OS prefers light. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --line: #d5d9e0;
+  --hover: #eef1f6;
+  --sel: #cfe0fb;
+  --fg: #1b1f27;
+  --dim: #667085;
+  --accent: #2563eb;
+}
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme='dark']):not([data-theme='light']) {
+    color-scheme: light;
     --bg: #f6f7f9;
     --panel: #ffffff;
     --line: #d5d9e0;

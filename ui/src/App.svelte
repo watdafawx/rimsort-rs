@@ -135,6 +135,26 @@
     target.addEventListener('pointerup', up)
   }
 
+  // ── theme ────────────────────────────────────────────────────────────
+  const THEME_KEY = 'rimsort-rs.theme'
+  let theme = $state<'auto' | 'dark' | 'light'>('auto')
+  try {
+    const saved = localStorage.getItem(THEME_KEY)
+    if (saved === 'dark' || saved === 'light') theme = saved
+  } catch {
+    /* storage unavailable */
+  }
+  $effect(() => {
+    const root = document.documentElement
+    if (theme === 'auto') root.removeAttribute('data-theme')
+    else root.dataset.theme = theme
+    try {
+      localStorage.setItem(THEME_KEY, theme)
+    } catch {
+      /* ignore */
+    }
+  })
+
   // Warn before closing the window with unsaved list changes.
   onMount(() => {
     const un = getCurrentWindow().onCloseRequested((e) => {
@@ -225,6 +245,11 @@
     {#if app.dirty}<span class="dirty" title="Changes not yet written to ModsConfig.xml"
         >● unsaved</span
       >{/if}
+    <select id="theme" aria-label="Theme" title="Theme" bind:value={theme}>
+      <option value="auto">Auto theme</option>
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
     <button id="settings" onclick={() => (showSettings = true)}>⚙ Settings</button>
   </header>
 
