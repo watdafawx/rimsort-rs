@@ -83,7 +83,8 @@ fn run(dir: &Path, args: &[String], ctx: &TaskCtx, mut on_line: impl FnMut(&str)
     Ok(())
 }
 
-fn copy_dir(src: &Path, dst: &Path) -> Result<()> {
+/// Recursive directory copy (used for downloads and local copies).
+pub fn copy_dir(src: &Path, dst: &Path) -> Result<()> {
     std::fs::create_dir_all(dst)?;
     for e in std::fs::read_dir(src)? {
         let e = e?;

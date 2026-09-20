@@ -260,6 +260,15 @@ export async function downloadMods(ids: string[]) {
   )
 }
 
+/** Copy a (Workshop) mod into the local mods folder. */
+export async function createLocalCopy(id: string) {
+  if (app.jobTask) return toast('A background job is already running')
+  await runJob(
+    call(commands.createLocalCopy(id)),
+    'Local copy created — pick which copy to use in Duplicates',
+  )
+}
+
 /** Clone GitHub repositories into the local mods folder. */
 export async function cloneGitMods(urls: string[]) {
   if (app.jobTask) return toast('A download is already running')

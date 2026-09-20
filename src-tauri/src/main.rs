@@ -226,6 +226,12 @@ async fn list_backups(state: St<'_>) -> Cmd<Vec<rimsort_core::dto::BackupInfo>> 
 
 #[tauri::command]
 #[specta::specta]
+async fn create_local_copy(state: St<'_>, id: ModId) -> Cmd<TaskId> {
+    Ok(state.inner().create_local_copy(id)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -289,6 +295,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            create_local_copy,
             list_backups,
             clone_git_mods,
             download_mods,

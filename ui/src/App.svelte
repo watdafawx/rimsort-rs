@@ -19,6 +19,7 @@
   import {
     app,
     clearActive,
+    createLocalCopy,
     deleteMod,
     downloadMods,
     describe,
@@ -525,6 +526,11 @@
         onclick={() => act(() => openUrl(d!.url))}>Open mod URL</button
       >
       <hr />
+      {#if menu.row.mod_type === 'SteamWorkshop'}
+        <button role="menuitem" onclick={() => act(() => createLocalCopy(menu!.row.id))}>
+          Create local copy
+        </button>
+      {/if}
       {#if menu.row.mod_type === 'Git'}
         <button role="menuitem" onclick={() => act(() => updateGit(menu!.row.id))}>
           Update (git pull)

@@ -660,6 +660,38 @@ Total # of mods: {}
         crate::gitmods::update(&path)
     }
 
+    /// Copy a mod's folder into the local mods folder so it can be edited (background task).
+    /// The copy's name is the original folder name with a `-local` suffix; refuses to overwrite.
+    pub fn create_local_copy(self: &Arc<Self>, id: ModId) -> Result<TaskId> {
+        let inst = self.current_instance()?;
+        if inst.local_folder.is_empty() {
+            return Err(Error::Other(
+                "Local mods folder is not set (Settings → Locations)".into(),
+            ));
+        }
+        let (src, folder, name) = {
+            let s = self.session.read().unwrap();
+            let m = s
+                .index
+                .get(id)
+                .ok_or_else(|| Error::Other("Unknown mod".into()))?;
+            (m.path.clone(), m.folder.clone(), m.name.clone())
+        };
+        let dest = PathBuf::from(&inst.local_folder).join(format!("{folder}-local"));
+        if dest.exists() {
+            return Err(Error::Other(format!("{} already exists", dest.display())));
+        }
+        Ok(self.tasks.spawn(move |ctx| {
+            ctx.progress(0, 1, format!("Copying {name}"));
+            if let Err(e) = crate::steamcmd::copy_dir(&src, &dest) {
+                let _ = std::fs::remove_dir_all(&dest); // no half copies
+                return Err(e);
+            }
+            ctx.progress(1, 1, "Done");
+            Ok(())
+        }))
+    }
+
     /// Clone GitHub repositories into the instance's local mods folder (background task).
     pub fn clone_git_mods(self: &Arc<Self>, urls: Vec<String>) -> Result<TaskId> {
         let inst = self.current_instance()?;

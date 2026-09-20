@@ -44,6 +44,7 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	createLocalCopy: (id: ModId) => typedError<number, ErrorDto>(__TAURI_INVOKE("create_local_copy", { id })),
 	listBackups: () => typedError<BackupInfo[], ErrorDto>(__TAURI_INVOKE("list_backups")),
 	cloneGitMods: (urls: string[]) => typedError<number, ErrorDto>(__TAURI_INVOKE("clone_git_mods", { urls })),
 	downloadMods: (ids: string[]) => typedError<number, ErrorDto>(__TAURI_INVOKE("download_mods", { ids })),
