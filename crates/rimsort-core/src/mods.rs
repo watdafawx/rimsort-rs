@@ -173,7 +173,11 @@ fn parse_dependency(li: &Node) -> Option<Dependency> {
     Some(Dependency {
         package_id,
         display_name: li.child_text("displayName").unwrap_or_default().into(),
-        workshop_url: li.child_text("workshopUrl").unwrap_or_default().into(),
+        workshop_url: li
+            .child_text("steamWorkshopUrl")
+            .or_else(|| li.child_text("workshopUrl"))
+            .unwrap_or_default()
+            .into(),
         alternatives: li
             .child("alternativePackageIds")
             .map(Node::li_texts)

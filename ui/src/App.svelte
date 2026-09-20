@@ -6,6 +6,7 @@
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
   import LogView from './lib/LogView.svelte'
+  import MissingDeps from './lib/MissingDeps.svelte'
   import ModList from './lib/ModList.svelte'
   import SettingsDialog from './lib/SettingsDialog.svelte'
   import {
@@ -29,6 +30,7 @@
   let detail = $state<ModDetail | null>(null)
   let showMissing = $state(false)
   let listMenu = $state(false)
+  let showDeps = $state(false)
   let view = $state<'mods' | 'log'>('mods')
 
   async function doImport() {
@@ -203,6 +205,9 @@
     </div>
     <button id="undo" onclick={undo} disabled={!app.undoDepth} title="Undo (Ctrl+Z)">↶</button>
     <button id="redo" onclick={redo} disabled={!app.redoDepth} title="Redo (Ctrl+Y)">↷</button>
+    {#if app.missingDeps}
+      <button id="deps" onclick={() => (showDeps = true)}>🧩 {app.missingDeps} missing</button>
+    {/if}
     <button
       id="logtab"
       class:active={view === 'log'}
@@ -379,6 +384,8 @@
       >
     </div>
   {/if}
+
+  {#if showDeps}<MissingDeps onclose={() => (showDeps = false)} />{/if}
 
   {#if showSettings}<SettingsDialog onclose={() => (showSettings = false)} />{/if}
 </div>

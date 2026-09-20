@@ -44,6 +44,28 @@ pub struct ModWarnings {
     pub warnings: Vec<Warning>,
 }
 
+/// A required package that isn't active, aggregated over everything that needs it.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct MissingDep {
+    pub package_id: String,
+    pub name: String,
+    pub workshop_id: Option<String>,
+    /// Names of active mods that require it.
+    pub required_by: Vec<String>,
+    /// An installed (but inactive) mod that satisfies it.
+    pub installed: Option<ModId>,
+}
+
+/// Steam Workshop id from `steam://url/CommunityFilePage/<id>` or `…filedetails/?id=<id>` links.
+pub fn workshop_id(url: &str) -> Option<String> {
+    let i = ["CommunityFilePage/", "id="]
+        .iter()
+        .filter_map(|k| url.rfind(k).map(|p| p + k.len()))
+        .max()?;
+    let digits: String = url[i..].chars().take_while(char::is_ascii_digit).collect();
+    (!digits.is_empty()).then_some(digits)
+}
+
 #[derive(Debug, Clone, Default, Serialize, Type)]
 pub struct ValidationView {
     /// Only mods that have at least one warning.
@@ -52,6 +74,8 @@ pub struct ValidationView {
     pub errors: u32,
     /// Mods with only warning-level issues.
     pub warnings: u32,
+    /// Distinct packages required but not active.
+    pub missing_dependencies: u32,
 }
 
 /// True when the mod lists supported versions but not the running `major.minor`.
@@ -195,7 +219,70 @@ pub fn validate(
         mw.warnings
             .retain(|x| seen.insert((x.kind as u8, x.other.clone())));
     }
+    view.missing_dependencies = view
+        .mods
+        .iter()
+        .flat_map(|mw| &mw.warnings)
+        .filter(|w| w.kind == WarningKind::MissingDependency)
+        .map(|w| w.other.as_str())
+        .collect::<HashSet<_>>()
+        .len() as u32;
     view
+}
+
+/// Every required package that isn't active, grouped by package, with an installed-but-inactive
+/// match when one exists (so the UI can offer "enable").
+pub fn missing_dependencies(
+    index: &ModIndex,
+    active: &[ModId],
+    src: &RuleSources,
+    use_alternative_ids: bool,
+) -> Vec<MissingDep> {
+    let mods: Vec<&Mod> = active
+        .iter()
+        .filter_map(|id| index.get(*id))
+        .filter(|m| m.valid)
+        .collect();
+    let active_pids: HashSet<&str> = mods.iter().map(|m| m.package_id.as_str()).collect();
+    let mut out: std::collections::BTreeMap<String, MissingDep> = Default::default();
+    for m in mods.iter().filter(|m| !src.ignored.contains(&m.package_id)) {
+        for dep in &m.rules.dependencies {
+            let satisfied = active_pids.contains(dep.package_id.as_str())
+                || (use_alternative_ids
+                    && dep
+                        .alternatives
+                        .iter()
+                        .any(|a| active_pids.contains(a.as_str())));
+            if satisfied {
+                continue;
+            }
+            let entry = out.entry(dep.package_id.clone()).or_insert_with(|| {
+                let installed = std::iter::once(&dep.package_id)
+                    .chain(if use_alternative_ids {
+                        dep.alternatives.iter()
+                    } else {
+                        [].iter()
+                    })
+                    .find_map(|pid| index.by_package(pid).next());
+                MissingDep {
+                    package_id: dep.package_id.clone(),
+                    name: if dep.display_name.is_empty() {
+                        installed.map_or_else(|| dep.package_id.clone(), |i| i.name.clone())
+                    } else {
+                        dep.display_name.clone()
+                    },
+                    workshop_id: workshop_id(&dep.workshop_url)
+                        .or_else(|| installed.and_then(|i| i.published_file_id.clone())),
+                    required_by: vec![],
+                    installed: installed.map(|i| i.id),
+                }
+            });
+            entry.required_by.push(m.name.clone());
+        }
+    }
+    let mut v: Vec<MissingDep> = out.into_values().collect();
+    v.sort_by_key(|d| d.name.to_lowercase());
+    v
 }
 
 #[cfg(test)]
@@ -281,6 +368,54 @@ mod tests {
         assert_eq!(w["x"], [WarningKind::Incompatible]);
         assert_eq!(w["y"], [WarningKind::Incompatible]); // reverse declaration
         assert_eq!(w["old"], [WarningKind::VersionMismatch]);
+    }
+
+    #[test]
+    fn missing_dependency_report() {
+        let dep = |p: &str, url: &str| Dependency {
+            package_id: p.into(),
+            display_name: "Lib".into(),
+            workshop_url: url.into(),
+            ..Default::default()
+        };
+        let mods = vec![
+            mk("a", |m| {
+                m.rules.dependencies = vec![
+                    dep("lib.gone", "steam://url/CommunityFilePage/12345"),
+                    dep("lib.here", ""),
+                ]
+            }),
+            mk("b", |m| m.rules.dependencies = vec![dep("lib.gone", "")]),
+            mk("lib.here", |_| {}),
+        ];
+        let idx = ModIndex::new(mods, String::new(), 0);
+        let active = [
+            ModId::from_path(Path::new("a")),
+            ModId::from_path(Path::new("b")),
+        ];
+        let v = missing_dependencies(&idx, &active, &RuleSources::default(), true);
+        assert_eq!(v.len(), 2);
+        let gone = v.iter().find(|d| d.package_id == "lib.gone").unwrap();
+        assert_eq!(
+            (
+                gone.workshop_id.as_deref(),
+                gone.required_by.len(),
+                gone.installed
+            ),
+            (Some("12345"), 2, None)
+        );
+        assert!(
+            v.iter()
+                .find(|d| d.package_id == "lib.here")
+                .unwrap()
+                .installed
+                .is_some()
+        );
+        assert_eq!(
+            workshop_id("https://steamcommunity.com/sharedfiles/filedetails/?id=99&x=1").as_deref(),
+            Some("99")
+        );
+        assert_eq!(workshop_id("nothing"), None);
     }
 
     #[test]

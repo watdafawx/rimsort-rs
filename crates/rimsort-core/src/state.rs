@@ -353,6 +353,17 @@ impl AppState {
         validate::validate(&s.index, &s.active.ids, &s.rules, use_alt)
     }
 
+    /// Required-but-inactive packages for the active list.
+    pub fn missing_dependencies(&self) -> Vec<validate::MissingDep> {
+        let use_alt = self
+            .settings
+            .read()
+            .unwrap()
+            .use_alternative_package_ids_as_satisfying_dependencies;
+        let s = self.session.read().unwrap();
+        validate::missing_dependencies(&s.index, &s.active.ids, &s.rules, use_alt)
+    }
+
     // ── sort & save ─────────────────────────────────────────────────────
 
     pub fn sort_active(&self) -> SortResultDto {

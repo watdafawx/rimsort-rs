@@ -18,6 +18,7 @@ export const app = $state({
   warnings: {} as Record<string, Warning[]>,
   errorCount: 0,
   warningCount: 0,
+  missingDeps: 0,
   communityRules: 0,
   /** Undo/redo depth, for enabling the buttons. */
   undoDepth: 0,
@@ -88,6 +89,7 @@ export function revalidate(delay = 60) {
     app.warnings = map
     app.errorCount = v.errors
     app.warningCount = v.warnings
+    app.missingDeps = v.missing_dependencies
   }, delay)
 }
 
@@ -130,7 +132,7 @@ async function pushActive() {
 }
 
 /** Move rows into the active list before `beforeId` (end when null). Accepts ids from either list. */
-export function enable(ids: string[], beforeId: string | null = null) {
+export async function enable(ids: string[], beforeId: string | null = null) {
   const set = new Set(ids)
   const moving = app.inactive.filter((r) => set.has(r.id))
   const bad = moving.filter((r) => !r.valid)
@@ -143,7 +145,7 @@ export function enable(ids: string[], beforeId: string | null = null) {
   const next = app.active.slice()
   next.splice(at < 0 ? next.length : at, 0, ...ok)
   app.active = next
-  pushActive()
+  await pushActive()
 }
 
 export function disable(ids: string[]) {

@@ -134,6 +134,12 @@ async fn get_validation(state: St<'_>) -> Cmd<rimsort_core::validate::Validation
 
 #[tauri::command]
 #[specta::specta]
+async fn get_missing_dependencies(state: St<'_>) -> Cmd<Vec<rimsort_core::validate::MissingDep>> {
+    Ok(state.missing_dependencies())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -196,6 +202,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            get_missing_dependencies,
             sort_active,
             save_mods_config,
             import_modlist,

@@ -40,6 +40,7 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	getMissingDependencies: () => typedError<MissingDep[], ErrorDto>(__TAURI_INVOKE("get_missing_dependencies")),
 	sortActive: () => typedError<SortResultDto, ErrorDto>(__TAURI_INVOKE("sort_active")),
 	saveModsConfig: () => typedError<SaveResult, ErrorDto>(__TAURI_INVOKE("save_mods_config")),
 	importModlist: (path: string) => typedError<ImportResult, ErrorDto>(__TAURI_INVOKE("import_modlist", { path })),
@@ -117,6 +118,17 @@ export type LogChunk = {
 	offset: number,
 	/**  Replace the displayed log instead of appending. */
 	reset: boolean,
+};
+
+/**  A required package that isn't active, aggregated over everything that needs it. */
+export type MissingDep = {
+	package_id: string,
+	name: string,
+	workshop_id: string | null,
+	/**  Names of active mods that require it. */
+	required_by: string[],
+	/**  An installed (but inactive) mod that satisfies it. */
+	installed: ModId | null,
 };
 
 export type ModDetail = {
@@ -205,6 +217,8 @@ export type ValidationView = {
 	errors: number,
 	/**  Mods with only warning-level issues. */
 	warnings: number,
+	/**  Distinct packages required but not active. */
+	missing_dependencies: number,
 };
 
 export type Warning = {
