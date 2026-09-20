@@ -89,3 +89,23 @@ pub struct SaveResult {
     pub backup: Option<String>,
     pub count: u32,
 }
+
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct ImportResult {
+    /// Entries resolved to installed mods and now active.
+    pub imported: u32,
+    /// Package ids in the file that aren't installed.
+    pub missing: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Type)]
+pub enum ExportFormat {
+    /// RimWorld `ModsConfig.xml` layout.
+    Xml,
+    /// RimSort JSON (`version`, `activeMods`, `knownExpansions`).
+    Json,
+    /// One package id per line.
+    PackageIds,
+    /// Human-readable `Name [package.id][url]` report.
+    Report,
+}

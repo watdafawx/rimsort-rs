@@ -190,6 +190,25 @@ export async function sort() {
   toast(r.changed ? 'Sorted' : 'Already sorted', 2500)
 }
 
+/** Replace the active list from a file (JSON, ModsConfig/.rml/.rws XML, text, clipboard report). */
+export async function importList(path: string) {
+  const before = snap()
+  const r = await call(commands.importModlist(path))
+  const l = await call(commands.getLists())
+  undoStack.push(before)
+  redoStack.length = 0
+  syncDepth()
+  app.active = l.active
+  app.inactive = l.inactive
+  app.missing = l.missing
+  app.dirty = true
+  revalidate(0)
+  toast(
+    `Imported ${r.imported} mods${r.missing.length ? `, ${r.missing.length} not installed` : ''}`,
+    4000,
+  )
+}
+
 export async function save() {
   const r = await call(commands.saveModsConfig())
   app.dirty = false

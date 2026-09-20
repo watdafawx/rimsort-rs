@@ -4,6 +4,7 @@ pub mod dto;
 mod error;
 pub mod launch;
 mod mod_id;
+pub mod modlist_io;
 pub mod mods;
 pub mod modsconfig;
 pub mod paths;

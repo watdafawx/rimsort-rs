@@ -1,8 +1,9 @@
 <script lang="ts">
   import { convertFileSrc } from '@tauri-apps/api/core'
+  import { open as pickFile, save as pickSave } from '@tauri-apps/plugin-dialog'
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
-  import type { ModDetail, ModRow } from './bindings'
+  import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
   import ModList from './lib/ModList.svelte'
   import SettingsDialog from './lib/SettingsDialog.svelte'
@@ -12,6 +13,7 @@
     describe,
     isError,
     disable,
+    importList,
     enable,
     loadSettings,
     moveActive,
@@ -25,6 +27,35 @@
   let showSettings = $state(false)
   let detail = $state<ModDetail | null>(null)
   let showMissing = $state(false)
+  let listMenu = $state(false)
+
+  async function doImport() {
+    const p = await pickFile({
+      title: 'Import mod list',
+      filters: [{ name: 'Mod lists', extensions: ['json', 'xml', 'rml', 'rws', 'txt'] }],
+    })
+    if (typeof p === 'string') await importList(p)
+  }
+
+  const EXPORTS: { format: ExportFormat; label: string; file: string; ext: string }[] = [
+    { format: 'Xml', label: 'Export as ModsConfig XML…', file: 'ModsConfig', ext: 'xml' },
+    { format: 'Json', label: 'Export as RimSort JSON…', file: 'modlist', ext: 'json' },
+    { format: 'PackageIds', label: 'Export package ids…', file: 'modlist', ext: 'txt' },
+  ]
+  async function doExport(x: (typeof EXPORTS)[number]) {
+    const p = await pickSave({
+      defaultPath: `${x.file}.${x.ext}`,
+      filters: [{ name: x.ext.toUpperCase(), extensions: [x.ext] }],
+    })
+    if (p) {
+      await call(commands.exportModlist(p, x.format))
+      toast('Exported', 2500)
+    }
+  }
+  async function copyList(format: ExportFormat, what: string) {
+    await navigator.clipboard.writeText(await call(commands.exportModlistText(format)))
+    toast(`${what} copied`, 2000)
+  }
   let menu = $state<{
     x: number
     y: number
@@ -104,7 +135,10 @@
 </script>
 
 <svelte:window
-  onclick={() => (menu = null)}
+  onclick={() => {
+    menu = null
+    listMenu = false
+  }}
   onkeydown={(e) => {
     if (e.key === 'Escape') menu = null
     if ((e.ctrlKey || e.metaKey) && !(e.target instanceof HTMLInputElement)) {
@@ -141,6 +175,30 @@
     <button id="sort" onclick={sort} disabled={!app.loaded}>⇅ Sort</button>
     <button id="save" class="primary" onclick={save} disabled={!app.loaded}>💾 Save</button>
     <button id="run" onclick={run} disabled={!app.loaded}>▶ Run</button>
+    <div class="dropdown">
+      <button
+        id="listmenu"
+        disabled={!app.loaded}
+        onclick={(e) => {
+          e.stopPropagation()
+          listMenu = !listMenu
+        }}>⇄ List ▾</button
+      >
+      {#if listMenu}
+        <div class="menu" role="menu" style:position="absolute" style:top="100%" style:left="0">
+          <button role="menuitem" onclick={doImport}>Import list…</button>
+          <hr />
+          {#each EXPORTS as x (x.format)}
+            <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
+          {/each}
+          <hr />
+          <button role="menuitem" onclick={() => copyList('Report', 'Report')}>Copy report</button>
+          <button role="menuitem" onclick={() => copyList('PackageIds', 'Package ids')}>
+            Copy package ids
+          </button>
+        </div>
+      {/if}
+    </div>
     <button id="undo" onclick={undo} disabled={!app.undoDepth} title="Undo (Ctrl+Z)">↶</button>
     <button id="redo" onclick={redo} disabled={!app.redoDepth} title="Redo (Ctrl+Y)">↷</button>
     <button id="clear" onclick={clearActive} disabled={!app.loaded}>Clear</button>
@@ -385,6 +443,9 @@
     width: 100%;
     border-radius: 4px;
     margin-bottom: 0.5rem;
+  }
+  .dropdown {
+    position: relative;
   }
   .menu {
     position: fixed;

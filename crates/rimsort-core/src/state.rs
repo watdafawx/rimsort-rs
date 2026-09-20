@@ -2,7 +2,11 @@
 
 use crate::{
     Error, ModId, Result, TaskId, TaskManager,
-    dto::{InstanceDto, ListsView, ModDetail, ModRow, SaveResult, SettingsView, SortResultDto},
+    dto::{
+        ExportFormat, ImportResult, InstanceDto, ListsView, ModDetail, ModRow, SaveResult,
+        SettingsView, SortResultDto,
+    },
+    modlist_io,
     mods::{self, ModIndex, ScanConfig},
     modsconfig::{self, ActiveList, ModsConfig},
     paths,
@@ -400,6 +404,79 @@ impl AppState {
             backup: backup.map(|b| b.to_string_lossy().into_owned()),
             count: config.active.len() as u32,
         })
+    }
+
+    /// Replace the active list from a mod list file (any supported format). Caller refetches lists.
+    pub fn import_modlist(&self, path: &str) -> Result<ImportResult> {
+        let text = crate::xml::decode_bytes(&std::fs::read(path)?);
+        let parsed = modlist_io::parse_list(&text)?;
+        let mut s = self.session.write().unwrap();
+        let active = modsconfig::resolve_active(&s.index, &parsed.package_ids);
+        let result = ImportResult {
+            imported: active.ids.len() as u32,
+            missing: active.missing.clone(),
+        };
+        s.active = active;
+        Ok(result)
+    }
+
+    /// Render the active list in `format`.
+    pub fn export_text(&self, format: ExportFormat) -> String {
+        let s = self.session.read().unwrap();
+        let ids = modsconfig::config_ids(&s.index, &s.active);
+        let version = s.index.game_version.clone();
+        let known = s
+            .config
+            .as_ref()
+            .map(|c| c.known_expansions.clone())
+            .unwrap_or_default();
+        match format {
+            ExportFormat::PackageIds => ids.join(
+                "
+",
+            ),
+            ExportFormat::Json => modlist_io::to_json(&version, &ids, &known),
+            ExportFormat::Xml => {
+                let mut c = s
+                    .config
+                    .clone()
+                    .unwrap_or_else(|| ModsConfig::new(&version));
+                c.active = ids;
+                if !version.is_empty() {
+                    c.version = version;
+                }
+                c.to_xml()
+            }
+            ExportFormat::Report => {
+                let mut out = format!(
+                    "Created with RimSort-rs
+RimWorld game version this list was created for: {version}
+Total # of mods: {}
+",
+                    s.active.ids.len()
+                );
+                for m in s.active.ids.iter().filter_map(|id| s.index.get(*id)) {
+                    let url = if !m.url.is_empty() {
+                        m.url.clone()
+                    } else if let Some(p) = &m.published_file_id {
+                        format!("https://steamcommunity.com/sharedfiles/filedetails/?id={p}")
+                    } else {
+                        "No url specified".into()
+                    };
+                    out.push_str(&format!(
+                        "
+{} [{}][{url}]",
+                        m.name, m.package_id
+                    ));
+                }
+                out
+            }
+        }
+    }
+
+    pub fn export_modlist(&self, path: &str, format: ExportFormat) -> Result<()> {
+        std::fs::write(path, self.export_text(format))?;
+        Ok(())
     }
 
     pub fn launch_game(&self) -> Result<()> {

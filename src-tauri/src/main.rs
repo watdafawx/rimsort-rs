@@ -2,7 +2,10 @@
 
 use rimsort_core::{
     AppState, ErrorDto, ModId, TaskEvent, TaskId, TaskManager, TaskSink,
-    dto::{InstanceDto, ListsView, ModDetail, SaveResult, SettingsView, SortResultDto},
+    dto::{
+        ExportFormat, ImportResult, InstanceDto, ListsView, ModDetail, SaveResult, SettingsView,
+        SortResultDto,
+    },
     paths::DetectedPaths,
 };
 use serde::{Deserialize, Serialize};
@@ -143,6 +146,24 @@ async fn save_mods_config(state: St<'_>) -> Cmd<SaveResult> {
 
 #[tauri::command]
 #[specta::specta]
+async fn import_modlist(state: St<'_>, path: String) -> Cmd<ImportResult> {
+    Ok(state.import_modlist(&path)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn export_modlist(state: St<'_>, path: String, format: ExportFormat) -> Cmd<()> {
+    Ok(state.export_modlist(&path, format)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn export_modlist_text(state: St<'_>, format: ExportFormat) -> Cmd<String> {
+    Ok(state.export_text(format))
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn launch_game(state: St<'_>) -> Cmd<()> {
     Ok(state.launch_game()?)
 }
@@ -171,6 +192,9 @@ fn builder() -> Builder<Wry> {
             get_validation,
             sort_active,
             save_mods_config,
+            import_modlist,
+            export_modlist,
+            export_modlist_text,
             launch_game,
             cancel_task
         ])

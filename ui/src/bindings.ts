@@ -42,6 +42,9 @@ export const commands = {
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
 	sortActive: () => typedError<SortResultDto, ErrorDto>(__TAURI_INVOKE("sort_active")),
 	saveModsConfig: () => typedError<SaveResult, ErrorDto>(__TAURI_INVOKE("save_mods_config")),
+	importModlist: (path: string) => typedError<ImportResult, ErrorDto>(__TAURI_INVOKE("import_modlist", { path })),
+	exportModlist: (path: string, format: ExportFormat) => typedError<null, ErrorDto>(__TAURI_INVOKE("export_modlist", { path, format })),
+	exportModlistText: (format: ExportFormat) => typedError<string, ErrorDto>(__TAURI_INVOKE("export_modlist_text", { format })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	cancelTask: (id: number) => typedError<null, ErrorDto>(__TAURI_INVOKE("cancel_task", { id })),
 };
@@ -65,6 +68,23 @@ export type DetectedPaths = {
 export type ErrorDto = {
 	kind: string,
 	message: string,
+};
+
+export type ExportFormat = 
+/**  RimWorld `ModsConfig.xml` layout. */
+"Xml" | 
+/**  RimSort JSON (`version`, `activeMods`, `knownExpansions`). */
+"Json" | 
+/**  One package id per line. */
+"PackageIds" | 
+/**  Human-readable `Name [package.id][url]` report. */
+"Report";
+
+export type ImportResult = {
+	/**  Entries resolved to installed mods and now active. */
+	imported: number,
+	/**  Package ids in the file that aren't installed. */
+	missing: string[],
 };
 
 export type InstanceDto = {
