@@ -128,6 +128,46 @@ fn prune_backups(path: &Path) {
     }
 }
 
+/// A saved copy of the previous ModsConfig.xml.
+#[derive(Debug, Clone)]
+pub struct Backup {
+    pub path: PathBuf,
+    /// Unix seconds encoded in the file name.
+    pub unix: u64,
+    /// Number of active mods it contained.
+    pub count: usize,
+}
+
+/// `ModsConfig.xml.bak-<unix>` files next to `config`, newest first.
+pub fn list_backups(config: &Path) -> Vec<Backup> {
+    let (Some(dir), Some(name)) = (config.parent(), config.file_name()) else {
+        return vec![];
+    };
+    let prefix = format!("{}.bak-", name.to_string_lossy());
+    let mut out: Vec<Backup> = fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let p = e.path();
+            let unix = p
+                .file_name()?
+                .to_string_lossy()
+                .strip_prefix(&prefix)?
+                .parse()
+                .ok()?;
+            let count = ModsConfig::read(&p).map_or(0, |c| c.active.len());
+            Some(Backup {
+                path: p,
+                unix,
+                count,
+            })
+        })
+        .collect();
+    out.sort_by_key(|b| std::cmp::Reverse(b.unix));
+    out
+}
+
 /// Ordered active list plus what couldn't be resolved.
 #[derive(Debug, Clone, Default)]
 pub struct ActiveList {
@@ -241,6 +281,27 @@ mod tests {
             user: Default::default(),
             mtime: 0,
         }
+    }
+
+    #[test]
+    fn lists_backups_newest_first() {
+        let t = tempfile::tempdir().unwrap();
+        let cfg = t.path().join("ModsConfig.xml");
+        let body = |n: usize| {
+            let lis: String = (0..n).map(|i| format!("<li>m.{i}</li>")).collect();
+            format!(
+                "<ModsConfigData><version>1</version><activeMods>{lis}</activeMods></ModsConfigData>"
+            )
+        };
+        fs::write(t.path().join("ModsConfig.xml.bak-100"), body(2)).unwrap();
+        fs::write(t.path().join("ModsConfig.xml.bak-2000"), body(5)).unwrap();
+        fs::write(t.path().join("ModsConfig.xml.bak-oops"), "x").unwrap();
+        fs::write(t.path().join("Other.bak-1"), "x").unwrap();
+        let b = list_backups(&cfg);
+        assert_eq!(
+            b.iter().map(|b| (b.unix, b.count)).collect::<Vec<_>>(),
+            [(2000, 5), (100, 2)]
+        );
     }
 
     #[test]

@@ -220,6 +220,12 @@ async fn clone_git_mods(state: St<'_>, urls: Vec<String>) -> Cmd<TaskId> {
 
 #[tauri::command]
 #[specta::specta]
+async fn list_backups(state: St<'_>) -> Cmd<Vec<rimsort_core::dto::BackupInfo>> {
+    Ok(state.list_backups()?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -283,6 +289,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            list_backups,
             clone_git_mods,
             download_mods,
             update_databases,

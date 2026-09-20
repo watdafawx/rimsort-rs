@@ -6,6 +6,7 @@
   import { onMount } from 'svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, external, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
+  import Backups from './lib/Backups.svelte'
   import ConfirmDelete from './lib/ConfirmDelete.svelte'
   import DownloadDialog from './lib/DownloadDialog.svelte'
   import Duplicates from './lib/Duplicates.svelte'
@@ -41,6 +42,7 @@
   let showDeps = $state(false)
   let showDups = $state(false)
   let showDownload = $state(false)
+  let showBackups = $state(false)
   let deleting = $state<ModDetail | null>(null)
   let editRuleId = $state<string | null>(null)
   let editMetaId = $state<string | null>(null)
@@ -284,6 +286,7 @@
       {#if listMenu}
         <div class="menu" role="menu" style:position="absolute" style:top="100%" style:left="0">
           <button role="menuitem" onclick={doImport}>Import list…</button>
+          <button role="menuitem" onclick={() => (showBackups = true)}>Restore from backup…</button>
           <button role="menuitem" onclick={() => (showDownload = true)}> Download mods… </button>
           <hr />
           {#each EXPORTS as x (x.format)}
@@ -565,6 +568,8 @@
       }}
     />
   {/if}
+
+  {#if showBackups}<Backups onclose={() => (showBackups = false)} />{/if}
 
   {#if showDownload}<DownloadDialog onclose={() => (showDownload = false)} />{/if}
 

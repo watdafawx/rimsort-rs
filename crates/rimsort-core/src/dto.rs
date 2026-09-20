@@ -176,6 +176,13 @@ pub struct ModRulesView {
     pub ignored: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct BackupInfo {
+    pub path: String,
+    pub unix: u32,
+    pub count: u32,
+}
+
 /// One installed copy of a package that exists in several places.
 #[derive(Debug, Clone, Serialize, Type)]
 pub struct DupCopy {

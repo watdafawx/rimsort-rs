@@ -700,6 +700,19 @@ Total # of mods: {}
         }))
     }
 
+    /// Automatic ModsConfig.xml backups for the current instance, newest first.
+    pub fn list_backups(&self) -> Result<Vec<crate::dto::BackupInfo>> {
+        let path = Self::mods_config_path(&self.current_instance()?)?;
+        Ok(modsconfig::list_backups(&path)
+            .into_iter()
+            .map(|b| crate::dto::BackupInfo {
+                path: b.path.to_string_lossy().into_owned(),
+                unix: b.unix.min(u64::from(u32::MAX)) as u32,
+                count: b.count as u32,
+            })
+            .collect())
+    }
+
     /// Package ids installed more than once, with which copy is active.
     pub fn duplicates(&self) -> Vec<crate::dto::DupGroup> {
         use crate::dto::{DupCopy, DupGroup};
