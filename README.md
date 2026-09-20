@@ -1,5 +1,63 @@
 # rimsort-rs
 
-Fork/rewrite of [RimSort](https://github.com/RimSort/RimSort) in Rust + Tauri, focused on speed and stability.
+A fast rewrite of [RimSort](https://github.com/RimSort/RimSort) (RimWorld mod manager) in Rust + Tauri 2 + Svelte 5.
+Goal: **speed and stability** — nothing on the UI thread waits on disk, parsing, or sorting.
 
-Licensed GPL-3.0 (derived from RimSort).
+It reads and writes RimSort-compatible data (settings, community rules, user rules, aux metadata), so you can point it
+at an existing RimSort setup and it just works.
+
+## What it does today
+
+- **Instances & paths** — auto-detects RimWorld, config, local and Workshop folders (Steam registry + libraries);
+  imports your RimSort instance/settings on first run.
+- **Fast scan** — ~700 mods in ~100 ms warm (parallel, tolerant About.xml parsing, never blocks the UI).
+- **Mod lists** — virtualized active/inactive lists with multi-select, drag & drop, keyboard, search (name, author,
+  package id, tags), source filter, sorting of the inactive list, undo/redo, resizable panes.
+- **Sort** — port of RimSort's tiered topological sort with community + user rules. Verified identical to RimSort's
+  Python on a real 584-mod list (`just golden`).
+- **Validation** — missing dependencies (with one-click enable / Workshop link), incompatibilities, load-order and
+  game-version warnings; duplicate-mod panel; per-mod ignore.
+- **Rules** — community rules DB + your own rules (editor writes RimSort's `userRules.json` format).
+- **Save/launch** — writes `ModsConfig.xml` with automatic timestamped backups; launches the game; Player.log viewer.
+- **Import/export** — RimSort JSON, ModsConfig/`.rml`/`.rws`, plain ids, clipboard reports.
+- **Extras** — per-mod colors/tags/notes (imported from RimSort's aux DB), delete to Recycle Bin, file watching with a
+  refresh banner, light/dark theme.
+
+See [plan/](plan/README.md) for the roadmap and what is still missing (Steam/SteamCMD downloads, git mods, todds,
+i18n, installers/updater).
+
+## Run
+
+Requirements: Rust (stable), Node 22+, [`just`](https://github.com/casey/just), `cargo install tauri-cli --version "^2" --locked`,
+and WebView2 (bundled with Windows 11).
+
+```sh
+cd ui && npm ci && cd ..
+just dev        # hot-reloading app against your real config
+just dev-safe   # same, but Save writes to a copy (debug/testconfig) — use while developing
+just test       # cargo tests (includes "bindings.ts is up to date")
+just lint       # clippy -D warnings, svelte-check, eslint
+just build      # debug installers
+just bindings   # regenerate ui/src/bindings.ts after changing commands/types
+just golden     # compare our sort with RimSort's Python (needs `just golden-setup`, a RimSort install)
+```
+
+## Layout
+
+```
+crates/rimsort-core/   pure Rust library, no Tauri: scan, parse, sort, validate, settings, I/O   (unit-tested)
+src-tauri/             thin Tauri glue: typed commands (tauri-specta), events
+ui/                    Svelte 5 + TypeScript frontend
+docs/                  architecture, sorting spec, release process
+tests/golden/          Python-vs-Rust sort comparison harness
+scripts/               dev tooling (CDP driver, screenshots)
+plan/                  roadmap, one file per step (gitignored)
+reference-python/      snapshot of the original RimSort source (gitignored, read-only)
+```
+
+Start with [docs/architecture.md](docs/architecture.md). Debugging the running app (logs, screenshots, DevTools-protocol
+driver) is described there too.
+
+## License
+
+GPL-3.0, derived from RimSort.
