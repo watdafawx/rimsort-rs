@@ -95,6 +95,7 @@
     navigator.clipboard.writeText(text).then(() => toast('Copied', 1500))
   const workshopUrl = (pfid: string) =>
     `https://steamcommunity.com/sharedfiles/filedetails/?id=${pfid}`
+  const steamUrl = (pfid: string) => `steam://url/CommunityFilePage/${pfid}`
   function act(fn: () => unknown) {
     try {
       fn()
@@ -484,6 +485,12 @@
         disabled={!menu.row.published_file_id}
         onclick={() => act(() => openUrl(workshopUrl(menu!.row.published_file_id!)))}
         >Open Workshop page</button
+      >
+      <button
+        role="menuitem"
+        disabled={!menu.row.published_file_id}
+        onclick={() => act(() => openUrl(steamUrl(menu!.row.published_file_id!)))}
+        >Open in Steam client</button
       >
       <button
         role="menuitem"

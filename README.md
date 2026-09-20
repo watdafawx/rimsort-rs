@@ -44,7 +44,7 @@ just golden     # compare our sort with RimSort's Python (needs `just golden-set
 
 ## Layout
 
-```
+```text
 crates/rimsort-core/   pure Rust library, no Tauri: scan, parse, sort, validate, settings, I/O   (unit-tested)
 src-tauri/             thin Tauri glue: typed commands (tauri-specta), events
 ui/                    Svelte 5 + TypeScript frontend
