@@ -46,7 +46,16 @@ export function waitTask(id: number): Promise<Task> {
   return new Promise((res) => waiters.set(id, [...(waiters.get(id) ?? []), res]))
 }
 
+/** Set when files changed outside the app (watched mods folders / ModsConfig.xml). */
+export const external = $state({ changed: null as 'mods' | 'config' | null })
+
 function apply(e: TaskEvent) {
+  if (e.kind === 'fs_changed') {
+    // `config` outranks `mods` (it is the more disruptive change).
+    if (e.what === 'config' || external.changed === null)
+      external.changed = e.what as 'mods' | 'config'
+    return
+  }
   tasks[e.id] ??= { id: e.id, status: 'running', done: 0, total: 0, msg: '' }
   const t = tasks[e.id]
   if (e.kind === 'progress') Object.assign(t, { done: e.done, total: e.total, msg: e.msg })

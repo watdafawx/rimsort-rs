@@ -30,6 +30,10 @@ pub enum TaskEvent {
         id: TaskId,
         error: ErrorDto,
     },
+    /// Not a task: files changed outside the app (`what` = "mods" | "config"). Shares this channel.
+    FsChanged {
+        what: String,
+    },
 }
 
 /// Where task events go; the Tauri layer implements this to emit UI events.
@@ -111,6 +115,11 @@ impl TaskManager {
             ctx.sink.emit(event);
         });
         id
+    }
+
+    /// The event sink, for non-task notifications (file watching).
+    pub fn sink(&self) -> Arc<dyn TaskSink> {
+        self.sink.clone()
     }
 
     pub fn cancel(&self, id: TaskId) -> Result<()> {

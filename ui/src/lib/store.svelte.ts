@@ -1,5 +1,5 @@
 import { commands, type ModRow, type SettingsView, type Warning } from '../bindings'
-import { call, toast, waitTask } from './ipc.svelte'
+import { call, external, toast, waitTask } from './ipc.svelte'
 
 export const app = $state({
   settings: null as SettingsView | null,
@@ -103,6 +103,7 @@ export async function loadSettings() {
 export async function refresh() {
   if (app.scanning) return
   app.scanning = true
+  external.changed = null
   try {
     app.scanTask = await call(commands.startScan())
     const t = await waitTask(app.scanTask)

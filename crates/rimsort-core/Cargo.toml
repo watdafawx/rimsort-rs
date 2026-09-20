@@ -16,6 +16,8 @@ dirs = "7"
 petgraph = "0.8"
 natord = "1"
 tracing = "0.1"
+notify = "8.2.0"
+notify-debouncer-mini = "0.7.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.56"

@@ -18,7 +18,8 @@ use crate::{
 use std::{
     collections::HashSet,
     path::PathBuf,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex, RwLock},
+    time::{Duration, Instant},
 };
 
 #[derive(Default)]
@@ -36,6 +37,9 @@ pub struct AppState {
     settings: RwLock<Settings>,
     load_warning: Option<String>,
     session: RwLock<Session>,
+    watcher: Mutex<Option<crate::watch::FsWatch>>,
+    /// When we last wrote ModsConfig.xml, so our own save isn't reported as an external change.
+    last_save: Arc<Mutex<Option<Instant>>>,
 }
 
 impl AppState {
@@ -83,6 +87,8 @@ impl AppState {
             settings: RwLock::new(settings),
             load_warning: warning,
             session: RwLock::default(),
+            watcher: Mutex::new(None),
+            last_save: Arc::default(),
         })
     }
 
@@ -243,6 +249,7 @@ impl AppState {
         }
         let settings = self.settings.read().unwrap().clone();
         let prefer_versioned = settings.prefer_versioned_about_tags;
+        self.restart_watch(&inst);
         let this = self.clone();
         Ok(self.tasks.spawn(move |ctx| {
             let game = PathBuf::from(&inst.game_folder);
@@ -276,6 +283,38 @@ impl AppState {
             };
             Ok(())
         }))
+    }
+
+    /// (Re)start watching the instance's mods and config folders.
+    fn restart_watch(&self, inst: &Instance) {
+        let dirs: Vec<PathBuf> = [&inst.local_folder, &inst.workshop_folder]
+            .into_iter()
+            .filter(|d| !d.is_empty())
+            .map(PathBuf::from)
+            .collect();
+        let cfg = (!inst.config_folder.is_empty()).then(|| PathBuf::from(&inst.config_folder));
+        let sink = self.tasks.sink();
+        let last_save = self.last_save.clone();
+        let watch = crate::watch::start(dirs, cfg, move |c| {
+            let what = match c {
+                crate::watch::Change::Mods => "mods",
+                crate::watch::Change::Config => {
+                    let ours = last_save
+                        .lock()
+                        .unwrap()
+                        .is_some_and(|t| t.elapsed() < Duration::from_secs(5));
+                    if ours {
+                        return;
+                    }
+                    "config"
+                }
+            };
+            sink.emit(crate::TaskEvent::FsChanged { what: what.into() });
+        });
+        match watch {
+            Ok(w) => *self.watcher.lock().unwrap() = Some(w),
+            Err(e) => tracing::warn!("file watching unavailable: {e}"),
+        }
     }
 
     // ── lists ───────────────────────────────────────────────────────────
@@ -427,6 +466,7 @@ impl AppState {
         if !s.index.game_version.is_empty() {
             config.version = s.index.game_version.clone();
         }
+        *self.last_save.lock().unwrap() = Some(Instant::now());
         let backup = config.write(&path)?;
         tracing::info!(
             "saved {} active mods to {}",

@@ -249,7 +249,9 @@ export type SortResultDto = {
 	changed: boolean,
 };
 
-export type TaskEvent = { kind: "progress"; id: number; done: number; total: number; msg: string } | { kind: "finished"; id: number } | { kind: "cancelled"; id: number } | { kind: "failed"; id: number; error: ErrorDto };
+export type TaskEvent = { kind: "progress"; id: number; done: number; total: number; msg: string } | { kind: "finished"; id: number } | { kind: "cancelled"; id: number } | { kind: "failed"; id: number; error: ErrorDto } | 
+/**  Not a task: files changed outside the app (`what` = "mods" | "config"). Shares this channel. */
+{ kind: "fs_changed"; what: string };
 
 /**  Emitted for every task state change (`task://` in the plan; one typed event carrying a tagged enum). */
 export type TaskUpdate = TaskEvent;

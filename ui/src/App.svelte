@@ -4,7 +4,7 @@
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
-  import { call, commands, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
+  import { call, commands, external, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
   import LogView from './lib/LogView.svelte'
   import MissingDeps from './lib/MissingDeps.svelte'
   import RuleEditor from './lib/RuleEditor.svelte'
@@ -223,6 +223,17 @@
     <button id="clear" onclick={clearActive} disabled={!app.loaded}>Clear</button>
   </nav>
 
+  {#if external.changed}
+    <div class="banner external">
+      {external.changed === 'config'
+        ? 'ModsConfig.xml was changed outside RimSort-rs.'
+        : 'Mods were added, removed or changed on disk.'}
+      {#if app.dirty}<span class="dim">(refreshing discards your unsaved changes)</span>{/if}
+      <button onclick={doRefresh}>Refresh</button>
+      <button class="link" onclick={() => (external.changed = null)}>Dismiss</button>
+    </div>
+  {/if}
+
   {#if app.missing.length}
     <div class="banner">
       <button class="link" onclick={() => (showMissing = !showMissing)}>
@@ -428,6 +439,12 @@
   }
   .dirty {
     color: #ecc94b;
+  }
+  .banner.external {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #23405f;
   }
   .banner {
     padding: 0.3rem 0.75rem;

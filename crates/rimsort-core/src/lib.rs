@@ -15,6 +15,7 @@ pub mod sort;
 mod state;
 mod task;
 pub mod validate;
+pub mod watch;
 mod xml;
 
 pub use error::{Error, ErrorDto, Result};
