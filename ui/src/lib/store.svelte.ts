@@ -223,6 +223,22 @@ export async function useCopy(id: string) {
   await pushActive()
 }
 
+/** Move a mod's folder to the recycle bin (after the caller confirmed) and refresh the lists. */
+export async function deleteMod(id: string) {
+  const wasActive = app.active.some((r) => r.id === id)
+  await call(commands.deleteMod(id))
+  const l = await call(commands.getLists())
+  app.active = l.active
+  app.inactive = l.inactive.slice().sort(inactiveCmp)
+  app.missing = l.missing
+  // The removed mod can't be undone back into the lists, so history would point at a dead id.
+  undoStack.length = redoStack.length = 0
+  syncDepth()
+  if (wasActive) app.dirty = true
+  revalidate(0)
+  toast('Moved to the Recycle Bin', 3000)
+}
+
 /** Disable everything except the base game and official expansions. */
 export function clearActive() {
   disable(app.active.filter((r) => r.mod_type !== 'Ludeon').map((r) => r.id))

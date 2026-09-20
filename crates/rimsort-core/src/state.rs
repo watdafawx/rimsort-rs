@@ -573,6 +573,44 @@ Total # of mods: {}
         })
     }
 
+    /// Move a mod's folder to the OS trash and drop it from the index and lists.
+    /// Base game / DLC can't be deleted. Nothing is removed if the trash operation fails.
+    pub fn delete_mod(&self, id: ModId) -> Result<()> {
+        let mut s = self.session.write().unwrap();
+        let m = s
+            .index
+            .get(id)
+            .ok_or_else(|| Error::Other("Unknown mod".into()))?;
+        if m.mod_type == mods::ModType::Ludeon {
+            return Err(Error::Other(
+                "The base game and expansions can't be deleted here".into(),
+            ));
+        }
+        let path = m.path.clone();
+        trash::delete(&path).map_err(|e| {
+            Error::Other(format!(
+                "Could not move {} to the recycle bin: {e}",
+                path.display()
+            ))
+        })?;
+        tracing::info!("moved {} to trash", path.display());
+        let mods: Vec<mods::Mod> = s
+            .index
+            .mods
+            .iter()
+            .filter(|m| m.id != id)
+            .cloned()
+            .collect();
+        s.index = Arc::new(ModIndex::new(
+            mods,
+            s.index.game_version.clone(),
+            s.index.scan_ms,
+        ));
+        s.active.ids.retain(|a| *a != id);
+        s.active.steam_suffix.remove(&id);
+        Ok(())
+    }
+
     /// Package ids installed more than once, with which copy is active.
     pub fn duplicates(&self) -> Vec<crate::dto::DupGroup> {
         use crate::dto::{DupCopy, DupGroup};

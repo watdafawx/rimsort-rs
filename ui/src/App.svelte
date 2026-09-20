@@ -6,6 +6,7 @@
   import { onMount } from 'svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import { call, commands, external, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
+  import ConfirmDelete from './lib/ConfirmDelete.svelte'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MissingDeps from './lib/MissingDeps.svelte'
@@ -15,6 +16,7 @@
   import {
     app,
     clearActive,
+    deleteMod,
     describe,
     isError,
     disable,
@@ -35,6 +37,7 @@
   let listMenu = $state(false)
   let showDeps = $state(false)
   let showDups = $state(false)
+  let deleting = $state<ModDetail | null>(null)
   let editRuleId = $state<string | null>(null)
   let view = $state<'mods' | 'log'>('mods')
 
@@ -487,6 +490,12 @@
       <button role="menuitem" onclick={() => act(() => (editRuleId = menu!.row.id))}
         >Edit rules…</button
       >
+      <button
+        role="menuitem"
+        class="danger-item"
+        disabled={!d || menu.row.mod_type === 'Ludeon'}
+        onclick={() => act(() => (deleting = d))}>Delete mod…</button
+      >
       <hr />
       <button role="menuitem" onclick={() => act(() => copy(menu!.row.package_id))}
         >Copy package id</button
@@ -499,6 +508,18 @@
   {/if}
 
   {#if editRuleId}<RuleEditor id={editRuleId} onclose={() => (editRuleId = null)} />{/if}
+
+  {#if deleting}
+    <ConfirmDelete
+      mod={deleting}
+      onclose={() => (deleting = null)}
+      onconfirm={async () => {
+        const id = deleting!.id
+        deleting = null
+        await deleteMod(id)
+      }}
+    />
+  {/if}
 
   {#if showDups}<Duplicates onclose={() => (showDups = false)} />{/if}
 
@@ -600,6 +621,9 @@
   }
   button.active {
     background: var(--sel);
+  }
+  .menu .danger-item:not(:disabled) {
+    color: #f56565;
   }
   .dropdown {
     position: relative;

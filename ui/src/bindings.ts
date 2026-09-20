@@ -41,6 +41,7 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	deleteMod: (id: ModId) => typedError<null, ErrorDto>(__TAURI_INVOKE("delete_mod", { id })),
 	getDuplicates: () => typedError<DupGroup[], ErrorDto>(__TAURI_INVOKE("get_duplicates")),
 	getModRules: (id: ModId) => typedError<{
 	package_id: string,

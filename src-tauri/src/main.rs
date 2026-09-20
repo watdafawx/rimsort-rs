@@ -170,6 +170,12 @@ async fn get_duplicates(state: St<'_>) -> Cmd<Vec<rimsort_core::dto::DupGroup>> 
 
 #[tauri::command]
 #[specta::specta]
+async fn delete_mod(state: St<'_>, id: ModId) -> Cmd<()> {
+    Ok(state.delete_mod(id)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -233,6 +239,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            delete_mod,
             get_duplicates,
             get_mod_rules,
             set_user_rule,
