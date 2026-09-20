@@ -1,0 +1,75 @@
+:root {
+  color-scheme: light dark;
+  --bg: #16181d;
+  --panel: #1e2128;
+  --line: #303541;
+  --hover: #262b35;
+  --sel: #2b4a7a;
+  --fg: #e6e8ee;
+  --dim: #8b93a5;
+  --accent: #4c9aff;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --line: #d5d9e0;
+    --hover: #eef1f6;
+    --sel: #cfe0fb;
+    --fg: #1b1f27;
+    --dim: #667085;
+    --accent: #2563eb;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.3rem 0.65rem;
+}
+button {
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--hover);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.toasts {
+  position: fixed;
+  right: 1rem;
+  bottom: 2.5rem;
+  display: grid;
+  gap: 0.5rem;
+  z-index: 20;
+}
+.toast {
+  background: #2d3748;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #4a5568;
+  max-width: 40ch;
+}

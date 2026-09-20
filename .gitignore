@@ -1,2 +1,9 @@
 /plan
 /reference-python
+/target
+node_modules
+dist
+*.log
+.DS_Store
+src-tauri/gen/
+/debug
