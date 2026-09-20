@@ -14,7 +14,8 @@ Release build, Windows 11, local NVMe, 2026-09-20. Numbers are wall time for the
 
 Real install (user's machine): 719 mods scan in ~100 ms warm; sorting 584 active mods takes ~11 ms.
 
-UI: worst frame gap scrolling a 585-row list was 8 ms; disabling 580 rows took 14 ms end to end.
+UI (WebView2, synthetic 5,000-row active list): worst frame gap over 200 scroll steps 8 ms (36 rows in the DOM);
+disabling 200 selected rows took 32 ms end to end. Real 585-row list: 8 ms worst frame gap, clearing 580 rows 14 ms.
 
 ## Reproduce
 
