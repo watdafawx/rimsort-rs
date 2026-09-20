@@ -10,6 +10,7 @@ export const commands = {
 	logFrontend: (level: string, message: string) => __TAURI_INVOKE<void>("log_frontend", { level, message }),
 	getSettings: () => typedError<SettingsView, ErrorDto>(__TAURI_INVOKE("get_settings")),
 	saveInstance: (instance: InstanceDto) => typedError<null, ErrorDto>(__TAURI_INVOKE("save_instance", { instance })),
+	updateOptions: (options: OptionsDto) => typedError<null, ErrorDto>(__TAURI_INVOKE("update_options", { options })),
 	switchInstance: (name: string) => typedError<null, ErrorDto>(__TAURI_INVOKE("switch_instance", { name })),
 	createInstance: (name: string) => typedError<null, ErrorDto>(__TAURI_INVOKE("create_instance", { name })),
 	deleteInstance: (name: string) => typedError<null, ErrorDto>(__TAURI_INVOKE("delete_instance", { name })),
@@ -96,6 +97,8 @@ export type InstanceDto = {
 	local_folder: string,
 	workshop_folder: string,
 	run_args: string,
+	/**  Launch through the Steam client instead of the game executable. */
+	launch_via_steam: boolean,
 };
 
 export type ListsView = {
@@ -175,6 +178,16 @@ export type ModWarnings = {
 	warnings: Warning[],
 };
 
+/**  Global toggles that affect scanning, sorting and validation. */
+export type OptionsDto = {
+	/**  Treat declared `modDependencies` as implicit loadAfter rules when sorting. */
+	dependencies_as_load_after: boolean,
+	/**  Let a dependency's alternative package ids satisfy it. */
+	use_alternative_ids: boolean,
+	/**  Prefer `*ByVersion` About.xml entries for the running game version (applied on rescan). */
+	prefer_versioned: boolean,
+};
+
 export type PathCheck = {
 	kind: string,
 	path: string,
@@ -192,6 +205,7 @@ export type SettingsView = {
 	current_instance: string,
 	instances: InstanceDto[],
 	sorting_algorithm: string,
+	options: OptionsDto,
 	/**  Set when settings were corrupt and reset this launch. */
 	warning: string | null,
 	checks: PathCheck[],

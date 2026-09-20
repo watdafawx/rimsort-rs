@@ -11,15 +11,17 @@
   let draft = $state<InstanceDto>({ ...current() })
   let notes = $state<string[]>([])
   let newName = $state('')
+  let opts = $state({ ...app.settings!.options })
 
-  const FIELDS: [keyof InstanceDto, string][] = [
+  type PathKey = 'game_folder' | 'config_folder' | 'local_folder' | 'workshop_folder'
+  const FIELDS: [PathKey, string][] = [
     ['game_folder', 'Game folder'],
     ['config_folder', 'Config folder (ModsConfig.xml)'],
     ['local_folder', 'Local mods folder'],
     ['workshop_folder', 'Steam Workshop folder'],
   ]
 
-  async function browse(key: keyof InstanceDto) {
+  async function browse(key: PathKey) {
     const picked = await open({ directory: true, defaultPath: draft[key] || undefined })
     if (typeof picked === 'string') draft[key] = picked
   }
@@ -34,6 +36,7 @@
   }
 
   async function saveAndRescan() {
+    await call(commands.updateOptions($state.snapshot(opts)))
     await call(commands.saveInstance($state.snapshot(draft)))
     await loadSettings()
     onclose()
@@ -104,6 +107,36 @@
       </div>
     {/each}
 
+    <div class="field">
+      <label for="run_args">Game launch arguments</label>
+      <input
+        id="run_args"
+        bind:value={draft.run_args}
+        spellcheck="false"
+        placeholder="-popupwindow"
+      />
+      <label class="check"
+        ><input type="checkbox" bind:checked={draft.launch_via_steam} /> Launch through Steam (arguments
+        are ignored)</label
+      >
+    </div>
+
+    <fieldset>
+      <legend>Sorting &amp; validation</legend>
+      <label class="check"
+        ><input type="checkbox" bind:checked={opts.dependencies_as_load_after} /> Treat declared dependencies
+        as “load after” when sorting</label
+      >
+      <label class="check"
+        ><input type="checkbox" bind:checked={opts.use_alternative_ids} /> Alternative package ids satisfy
+        a dependency</label
+      >
+      <label class="check"
+        ><input type="checkbox" bind:checked={opts.prefer_versioned} /> Prefer version-specific About.xml
+        entries (needs rescan)</label
+      >
+    </fieldset>
+
     <div class="row">
       <button onclick={detect}>Auto-detect</button>
       <span class="dim">{notes.join(' · ')}</span>
@@ -149,6 +182,24 @@
   .field {
     display: grid;
     gap: 0.25rem;
+  }
+  fieldset {
+    display: grid;
+    gap: 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  legend {
+    color: var(--dim);
+    padding: 0 0.3rem;
+  }
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .check input {
+    flex: none;
   }
   .bad {
     color: #f56565;

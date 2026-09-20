@@ -65,6 +65,12 @@ async fn save_instance(state: St<'_>, instance: InstanceDto) -> Cmd<()> {
 
 #[tauri::command]
 #[specta::specta]
+async fn update_options(state: St<'_>, options: rimsort_core::dto::OptionsDto) -> Cmd<()> {
+    Ok(state.update_options(options)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn switch_instance(state: St<'_>, name: String) -> Cmd<()> {
     Ok(state.switch_instance(&name)?)
 }
@@ -193,6 +199,7 @@ fn builder() -> Builder<Wry> {
             log_frontend,
             get_settings,
             save_instance,
+            update_options,
             switch_instance,
             create_instance,
             delete_instance,

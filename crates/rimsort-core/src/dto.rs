@@ -12,6 +12,19 @@ pub struct InstanceDto {
     pub local_folder: String,
     pub workshop_folder: String,
     pub run_args: String,
+    /// Launch through the Steam client instead of the game executable.
+    pub launch_via_steam: bool,
+}
+
+/// Global toggles that affect scanning, sorting and validation.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct OptionsDto {
+    /// Treat declared `modDependencies` as implicit loadAfter rules when sorting.
+    pub dependencies_as_load_after: bool,
+    /// Let a dependency's alternative package ids satisfy it.
+    pub use_alternative_ids: bool,
+    /// Prefer `*ByVersion` About.xml entries for the running game version (applied on rescan).
+    pub prefer_versioned: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
@@ -19,6 +32,7 @@ pub struct SettingsView {
     pub current_instance: String,
     pub instances: Vec<InstanceDto>,
     pub sorting_algorithm: String,
+    pub options: OptionsDto,
     /// Set when settings were corrupt and reset this launch.
     pub warning: Option<String>,
     pub checks: Vec<PathCheck>,

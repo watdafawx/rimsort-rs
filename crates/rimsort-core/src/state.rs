@@ -4,7 +4,7 @@ use crate::{
     Error, ModId, Result, TaskId, TaskManager,
     dto::{
         ExportFormat, ImportResult, InstanceDto, ListsView, LogChunk, ModDetail, ModRow,
-        SaveResult, SettingsView, SortResultDto,
+        OptionsDto, SaveResult, SettingsView, SortResultDto,
     },
     modlist_io,
     mods::{self, ModIndex, ScanConfig},
@@ -96,6 +96,11 @@ impl AppState {
             local_folder: i.local_folder.clone(),
             workshop_folder: i.workshop_folder.clone(),
             run_args: i.run_args.clone(),
+            launch_via_steam: i
+                .extra
+                .get("launch_via_steam_protocol")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
         }
     }
 
@@ -106,6 +111,11 @@ impl AppState {
             current_instance: s.current_instance.clone(),
             instances: s.instances.values().map(Self::instance_dto).collect(),
             sorting_algorithm: s.sorting_algorithm.clone(),
+            options: OptionsDto {
+                dependencies_as_load_after: s.use_moddependencies_as_load_these_before,
+                use_alternative_ids: s.use_alternative_package_ids_as_satisfying_dependencies,
+                prefer_versioned: s.prefer_versioned_about_tags,
+            },
             warning: self.load_warning.clone(),
             checks: paths::validate(&current),
             game_version: paths::game_version(std::path::Path::new(&current.game_folder)),
@@ -131,6 +141,19 @@ impl AppState {
             inst.local_folder = dto.local_folder;
             inst.workshop_folder = dto.workshop_folder;
             inst.run_args = dto.run_args;
+            inst.extra.insert(
+                "launch_via_steam_protocol".into(),
+                serde_json::Value::Bool(dto.launch_via_steam),
+            );
+            Ok(())
+        })
+    }
+
+    pub fn update_options(&self, o: OptionsDto) -> Result<()> {
+        self.mutate_settings(|s| {
+            s.use_moddependencies_as_load_these_before = o.dependencies_as_load_after;
+            s.use_alternative_package_ids_as_satisfying_dependencies = o.use_alternative_ids;
+            s.prefer_versioned_about_tags = o.prefer_versioned;
             Ok(())
         })
     }
