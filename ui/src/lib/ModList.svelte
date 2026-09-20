@@ -54,6 +54,7 @@
         r.name.toLowerCase().includes(q) ||
         r.authors.toLowerCase().includes(q) ||
         r.package_id.includes(q) ||
+        r.tags.some((t) => t.toLowerCase().includes(q)) ||
         r.published_file_id === q,
     )
   })
@@ -72,6 +73,8 @@
 
   function rowTitle(r: ModRow): string {
     const lines = [r.name, r.package_id]
+    if (r.tags.length) lines.push(`Tags: ${r.tags.join(', ')}`)
+    if (r.has_note) lines.push('(has a note)')
     if (!r.valid) lines.push('', 'Invalid mod (no usable About.xml)')
     const w = warnings[r.id]
     if (w) lines.push('', ...w.map(describe))
@@ -227,6 +230,7 @@
           aria-selected={sel.has(r.id)}
           tabindex="-1"
           style:transform="translateY({i * ROW}px)"
+          style:box-shadow={r.color ? `inset 4px 0 0 ${r.color}` : undefined}
           title={rowTitle(r)}
           draggable="true"
           onclick={(e) => pick(i, e)}

@@ -66,6 +66,12 @@ fn scan_sort_real_install() {
         v.warnings,
         v.mods.len()
     );
+    let all: Vec<_> = l.active.iter().chain(&l.inactive).collect();
+    println!(
+        "colored {} with-note {}",
+        all.iter().filter(|r| r.color.is_some()).count(),
+        all.iter().filter(|r| r.has_note).count()
+    );
     let before: Vec<_> = l.active.iter().map(|r| r.package_id.clone()).collect();
     let t = Instant::now();
     let r = state.sort_active();

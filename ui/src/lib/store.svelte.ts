@@ -223,6 +223,18 @@ export async function useCopy(id: string) {
   await pushActive()
 }
 
+/** Update one row in place (e.g. after editing its color/tags), in whichever list holds it. */
+export function patchRow(id: string, patch: Partial<ModRow>) {
+  for (const key of ['active', 'inactive'] as const) {
+    const i = app[key].findIndex((r) => r.id === id)
+    if (i >= 0) {
+      const next = app[key].slice()
+      next[i] = { ...next[i], ...patch }
+      app[key] = next
+    }
+  }
+}
+
 /** Move a mod's folder to the recycle bin (after the caller confirmed) and refresh the lists. */
 export async function deleteMod(id: string) {
   const wasActive = app.active.some((r) => r.id === id)

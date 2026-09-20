@@ -4,6 +4,7 @@ pub mod dto;
 mod error;
 pub mod launch;
 pub mod logs;
+pub mod meta;
 mod mod_id;
 pub mod modlist_io;
 pub mod mods;

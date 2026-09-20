@@ -176,6 +176,12 @@ async fn delete_mod(state: St<'_>, id: ModId) -> Cmd<()> {
 
 #[tauri::command]
 #[specta::specta]
+async fn set_mod_meta(state: St<'_>, id: ModId, meta: rimsort_core::dto::MetaDto) -> Cmd<()> {
+    Ok(state.set_mod_meta(id, meta)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -239,6 +245,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            set_mod_meta,
             delete_mod,
             get_duplicates,
             get_mod_rules,

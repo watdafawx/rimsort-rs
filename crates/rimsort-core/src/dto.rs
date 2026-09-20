@@ -52,6 +52,10 @@ pub struct ModRow {
     pub published_file_id: Option<String>,
     /// Folder modification time, Unix seconds (0 when unknown).
     pub modified: u32,
+    /// User-chosen color (`#rrggbb`).
+    pub color: Option<String>,
+    pub tags: Vec<String>,
+    pub has_note: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
@@ -89,6 +93,17 @@ pub struct ModDetail {
     pub incompatible_with: Vec<String>,
     /// Absolute path of `About/Preview.png` when it exists.
     pub preview: Option<String>,
+    pub color: Option<String>,
+    pub tags: Vec<String>,
+    pub note: String,
+}
+
+/// Personal color/tags/note for a mod.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
+pub struct MetaDto {
+    pub color: Option<String>,
+    pub tags: Vec<String>,
+    pub note: String,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]

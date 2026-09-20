@@ -38,9 +38,13 @@ export const commands = {
 	incompatible_with: string[],
 	/**  Absolute path of `About/Preview.png` when it exists. */
 	preview: string | null,
+	color: string | null,
+	tags: string[],
+	note: string,
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	setModMeta: (id: ModId, meta: MetaDto) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_mod_meta", { id, meta })),
 	deleteMod: (id: ModId) => typedError<null, ErrorDto>(__TAURI_INVOKE("delete_mod", { id })),
 	getDuplicates: () => typedError<DupGroup[], ErrorDto>(__TAURI_INVOKE("get_duplicates")),
 	getModRules: (id: ModId) => typedError<{
@@ -157,6 +161,13 @@ export type LogChunk = {
 	reset: boolean,
 };
 
+/**  Personal color/tags/note for a mod. */
+export type MetaDto = {
+	color: string | null,
+	tags: string[],
+	note: string,
+};
+
 /**  A required package that isn't active, aggregated over everything that needs it. */
 export type MissingDep = {
 	package_id: string,
@@ -188,6 +199,9 @@ export type ModDetail = {
 	incompatible_with: string[],
 	/**  Absolute path of `About/Preview.png` when it exists. */
 	preview: string | null,
+	color: string | null,
+	tags: string[],
+	note: string,
 };
 
 /**  Stable mod identity: uuid5 of the mod folder path, same across scans. */
@@ -205,6 +219,10 @@ export type ModRow = {
 	published_file_id: string | null,
 	/**  Folder modification time, Unix seconds (0 when unknown). */
 	modified: number,
+	/**  User-chosen color (`#rrggbb`). */
+	color: string | null,
+	tags: string[],
+	has_note: boolean,
 };
 
 /**  All rule sources for one mod, for the rule editor. */

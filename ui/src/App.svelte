@@ -9,6 +9,7 @@
   import ConfirmDelete from './lib/ConfirmDelete.svelte'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
+  import MetaEditor from './lib/MetaEditor.svelte'
   import MissingDeps from './lib/MissingDeps.svelte'
   import RuleEditor from './lib/RuleEditor.svelte'
   import ModList from './lib/ModList.svelte'
@@ -39,6 +40,7 @@
   let showDups = $state(false)
   let deleting = $state<ModDetail | null>(null)
   let editRuleId = $state<string | null>(null)
+  let editMetaId = $state<string | null>(null)
   let view = $state<'mods' | 'log'>('mods')
 
   async function doImport() {
@@ -367,6 +369,8 @@
             {/each}
           </ul>
         {/if}
+        {#if detail.tags.length}<p class="dim">Tags: {detail.tags.join(', ')}</p>{/if}
+        {#if detail.note}<p class="note">📝 {detail.note}</p>{/if}
         {#if detail.invalid_reason}<p class="bad">{detail.invalid_reason}</p>{/if}
         <p class="desc">{detail.description}</p>
       {:else}
@@ -487,6 +491,9 @@
         onclick={() => act(() => openUrl(d!.url))}>Open mod URL</button
       >
       <hr />
+      <button role="menuitem" onclick={() => act(() => (editMetaId = menu!.row.id))}
+        >Color, tags &amp; notes…</button
+      >
       <button role="menuitem" onclick={() => act(() => (editRuleId = menu!.row.id))}
         >Edit rules…</button
       >
@@ -506,6 +513,8 @@
       >
     </div>
   {/if}
+
+  {#if editMetaId}<MetaEditor id={editMetaId} onclose={() => (editMetaId = null)} />{/if}
 
   {#if editRuleId}<RuleEditor id={editRuleId} onclose={() => (editRuleId = null)} />{/if}
 
@@ -654,6 +663,14 @@
   }
   .path {
     font-size: 0.75rem;
+  }
+  .note {
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    background: var(--panel);
+    border-left: 3px solid var(--accent);
+    padding: 0.3rem 0.5rem;
+    margin: 0.4rem 0;
   }
   .desc {
     white-space: pre-wrap;

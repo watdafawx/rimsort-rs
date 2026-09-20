@@ -6,7 +6,7 @@ use crate::{
         ExportFormat, ImportResult, InstanceDto, ListsView, LogChunk, ModDetail, ModRow,
         ModRulesView, OptionsDto, SaveResult, SettingsView, SortResultDto, UserRuleDto,
     },
-    modlist_io,
+    meta, modlist_io,
     mods::{self, ModIndex, ScanConfig},
     modsconfig::{self, ActiveList, ModsConfig},
     paths,
@@ -25,6 +25,8 @@ use std::{
 #[derive(Default)]
 struct Session {
     index: Arc<ModIndex>,
+    meta: meta::MetaMap,
+    meta_path: PathBuf,
     rules: Arc<RuleSources>,
     active: ActiveList,
     /// The config as last read from disk (keeps unknown elements / known expansions).
@@ -275,8 +277,27 @@ impl AppState {
                 .as_ref()
                 .map(|c| modsconfig::resolve_active(&index, &c.active))
                 .unwrap_or_default();
+            // Personal metadata: our file, else a one-time import from RimSort's aux DB.
+            let meta_path = meta::meta_path(&inst.name);
+            let meta = if meta_path.exists() {
+                meta::load(&meta_path)
+            } else {
+                let m = meta::import_rimsort(&inst.name, &index);
+                if !m.is_empty() {
+                    let _ = meta::save(&meta_path, &m);
+                }
+                m
+            };
+            let mut rules = rules;
+            Arc::make_mut(&mut rules).ignored.extend(
+                meta.iter()
+                    .filter(|(_, m)| m.ignore)
+                    .map(|(p, _)| p.clone()),
+            );
             *this.session.write().unwrap() = Session {
                 index,
+                meta,
+                meta_path,
                 rules,
                 active,
                 config,
@@ -319,7 +340,8 @@ impl AppState {
 
     // ── lists ───────────────────────────────────────────────────────────
 
-    fn row(m: &mods::Mod, game_version: &str, rules: &RuleSources) -> ModRow {
+    fn row(m: &mods::Mod, game_version: &str, rules: &RuleSources, meta: &meta::MetaMap) -> ModRow {
+        let md = meta.get(&m.package_id);
         let unsupported = validate::version_mismatch(m, game_version, rules);
         ModRow {
             id: m.id,
@@ -331,6 +353,9 @@ impl AppState {
             unsupported_version: unsupported,
             published_file_id: m.published_file_id.clone(),
             modified: m.mtime.clamp(0, i64::from(u32::MAX)) as u32,
+            color: md.and_then(|d| d.color.clone()),
+            tags: md.map(|d| d.tags.clone()).unwrap_or_default(),
+            has_note: md.is_some_and(|d| !d.note.is_empty()),
         }
     }
 
@@ -343,14 +368,14 @@ impl AppState {
                 .ids
                 .iter()
                 .filter_map(|id| s.index.get(*id))
-                .map(|m| Self::row(m, &s.index.game_version, &s.rules))
+                .map(|m| Self::row(m, &s.index.game_version, &s.rules, &s.meta))
                 .collect(),
             inactive: s
                 .index
                 .mods
                 .iter()
                 .filter(|m| !active_set.contains(&m.id))
-                .map(|m| Self::row(m, &s.index.game_version, &s.rules))
+                .map(|m| Self::row(m, &s.index.game_version, &s.rules, &s.meta))
                 .collect(),
             missing: s.active.missing.clone(),
             game_version: s.index.game_version.clone(),
@@ -387,6 +412,17 @@ impl AppState {
             load_after: m.load_after_all().cloned().collect(),
             load_before: m.load_before_all().cloned().collect(),
             incompatible_with: m.rules.incompatible_with.clone(),
+            color: s.meta.get(&m.package_id).and_then(|d| d.color.clone()),
+            tags: s
+                .meta
+                .get(&m.package_id)
+                .map(|d| d.tags.clone())
+                .unwrap_or_default(),
+            note: s
+                .meta
+                .get(&m.package_id)
+                .map(|d| d.note.clone())
+                .unwrap_or_default(),
             preview: Some(m.path.join("About").join("Preview.png"))
                 .filter(|p| p.is_file())
                 .map(|p| p.to_string_lossy().into_owned()),
@@ -729,7 +765,7 @@ Total # of mods: {}
         Ok(())
     }
 
-    /// Suppress (or restore) warnings for a mod via `ignore.json`.
+    /// Suppress (or restore) warnings for a mod (stored with its personal metadata).
     pub fn set_ignored(&self, id: ModId, ignored: bool) -> Result<()> {
         let mut s = self.session.write().unwrap();
         let pid = s
@@ -737,12 +773,8 @@ Total # of mods: {}
             .get(id)
             .map(|m| m.package_id.clone())
             .ok_or_else(|| Error::Other("Unknown mod".into()))?;
-        let text = crate::rules::write_ignore(
-            crate::rules::read_db_text("ignore.json").as_deref(),
-            &pid,
-            ignored,
-        )?;
-        settings::atomic_write(&crate::rules::own_db_path("ignore.json"), text.as_bytes())?;
+        s.meta.entry(pid.clone()).or_default().ignore = ignored;
+        meta::save(&s.meta_path, &s.meta)?;
         let rules = Arc::make_mut(&mut s.rules);
         if ignored {
             rules.ignored.insert(pid);
@@ -750,6 +782,33 @@ Total # of mods: {}
             rules.ignored.remove(&pid);
         }
         Ok(())
+    }
+
+    /// Set a mod's color, tags and note.
+    pub fn set_mod_meta(&self, id: ModId, dto: crate::dto::MetaDto) -> Result<()> {
+        let mut s = self.session.write().unwrap();
+        let pid = s
+            .index
+            .get(id)
+            .map(|m| m.package_id.clone())
+            .ok_or_else(|| Error::Other("Unknown mod".into()))?;
+        let color = dto.color.map(|c| c.trim().to_lowercase()).filter(|c| {
+            c.len() == 7 && c.starts_with('#') && c[1..].chars().all(|h| h.is_ascii_hexdigit())
+        });
+        let mut tags: Vec<String> = Vec::new();
+        for t in dto
+            .tags
+            .into_iter()
+            .map(|t| t.trim().to_owned())
+            .filter(|t| !t.is_empty())
+        {
+            if !tags.iter().any(|x| x.eq_ignore_ascii_case(&t)) {
+                tags.push(t);
+            }
+        }
+        let m = s.meta.entry(pid).or_default();
+        (m.color, m.tags, m.note) = (color, tags, dto.note.trim().to_owned());
+        meta::save(&s.meta_path, &s.meta)
     }
 
     pub fn launch_game(&self) -> Result<()> {

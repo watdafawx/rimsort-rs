@@ -513,6 +513,34 @@ pub fn scan(cfg: &ScanConfig, ctx: &TaskCtx) -> Result<ModIndex> {
 }
 
 #[cfg(test)]
+impl Mod {
+    /// Minimal valid mod for tests.
+    pub fn stub(package_id: &str, folder: &str) -> Mod {
+        Mod {
+            id: ModId::from_path(Path::new(folder)),
+            path: PathBuf::from(folder),
+            folder: folder.into(),
+            mod_type: ModType::Local,
+            valid: true,
+            invalid_reason: None,
+            package_id: package_id.into(),
+            name: package_id.to_uppercase(),
+            authors: vec![],
+            description: String::new(),
+            url: String::new(),
+            mod_version: String::new(),
+            supported_versions: vec![],
+            published_file_id: None,
+            steam_app_id: None,
+            rules: Rules::default(),
+            community: ExtRule::default(),
+            user: ExtRule::default(),
+            mtime: 0,
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
