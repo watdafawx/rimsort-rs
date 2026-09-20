@@ -1,5 +1,6 @@
 //! Tauri-free core logic for rimsort-rs.
 
+pub mod dbupdate;
 pub mod dto;
 mod error;
 pub mod gitmods;

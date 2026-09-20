@@ -1,6 +1,6 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog'
-  import type { InstanceDto } from '../bindings'
+  import type { DbResult, InstanceDto } from '../bindings'
   import { call, commands, toast } from './ipc.svelte'
   import { app, loadSettings, refresh } from './store.svelte'
 
@@ -11,6 +11,17 @@
   let draft = $state<InstanceDto>({ ...current() })
   let notes = $state<string[]>([])
   let newName = $state('')
+  let dbResults = $state<DbResult[]>([])
+  let dbBusy = $state(false)
+
+  async function updateDbs() {
+    dbBusy = true
+    try {
+      dbResults = await call(commands.updateDatabases())
+    } finally {
+      dbBusy = false
+    }
+  }
   let opts = $state({ ...app.settings!.options })
 
   type PathKey = 'game_folder' | 'config_folder' | 'local_folder' | 'workshop_folder'
@@ -137,6 +148,30 @@
       >
     </fieldset>
 
+    <fieldset>
+      <legend>Rule databases</legend>
+      <div class="row">
+        <button onclick={updateDbs} disabled={dbBusy}
+          >{dbBusy ? 'Updating…' : 'Update databases'}</button
+        >
+        <span class="dim"
+          >Community rules, Use This Instead, No Version Warning. Applied on the next rescan.</span
+        >
+      </div>
+      {#each dbResults as r (r.name)}
+        <div class="dbrow" class:bad={r.status === 'Failed'}>
+          <strong>{r.name}</strong>
+          <span
+            >{r.status === 'Updated'
+              ? 'updated'
+              : r.status === 'NotModified'
+                ? 'already up to date'
+                : 'failed'} — {r.detail}</span
+          >
+        </div>
+      {/each}
+    </fieldset>
+
     <div class="row">
       <button onclick={detect}>Auto-detect</button>
       <span class="dim">{notes.join(' · ')}</span>
@@ -200,6 +235,11 @@
   }
   .check input {
     flex: none;
+  }
+  .dbrow {
+    display: flex;
+    gap: 0.6rem;
+    font-size: 0.85rem;
   }
   .bad {
     color: #f56565;

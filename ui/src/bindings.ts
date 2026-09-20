@@ -44,6 +44,7 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	updateDatabases: () => typedError<DbResult[], ErrorDto>(__TAURI_INVOKE("update_databases")),
 	updateGitMod: (id: ModId) => typedError<string, ErrorDto>(__TAURI_INVOKE("update_git_mod", { id })),
 	setModMeta: (id: ModId, meta: MetaDto) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_mod_meta", { id, meta })),
 	deleteMod: (id: ModId) => typedError<null, ErrorDto>(__TAURI_INVOKE("delete_mod", { id })),
@@ -80,6 +81,15 @@ export const events = {
 };
 
 /* Types */
+export type DbResult = {
+	name: string,
+	status: DbStatus,
+	/**  Error text when `Failed`, else size info. */
+	detail: string,
+};
+
+export type DbStatus = "Updated" | "NotModified" | "Failed";
+
 export type DetectedPaths = {
 	game_folder: string | null,
 	config_folder: string | null,

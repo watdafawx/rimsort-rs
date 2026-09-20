@@ -373,12 +373,35 @@ impl RuleSources {
                 .collect();
         }
 
-        if let Some(p) = resolve(
+        // Fresh installs have no external_* settings: fall back to the default download layout.
+        let unconfigured = |prefix: &str| {
+            !settings
+                .extra
+                .contains_key(&format!("{prefix}_metadata_source"))
+        };
+        let disabled = |prefix: &str| {
+            matches!(
+                settings
+                    .extra
+                    .get(&format!("{prefix}_metadata_source"))
+                    .and_then(Value::as_str),
+                Some("None" | "Disabled")
+            )
+        };
+
+        let replacements = resolve(
             settings,
             "external_use_this_instead",
             "external_use_this_instead_repo_path",
             "replacements.json.gz",
-        ) && let Ok(bytes) = fs::read(&p)
+        )
+        .or_else(|| {
+            unconfigured("external_use_this_instead")
+                .then(|| find_in_dbs("UseThisInstead/replacements.json.gz"))
+                .flatten()
+        });
+        if let Some(p) = replacements
+            && let Ok(bytes) = fs::read(&p)
         {
             match parse_replacements(&bytes) {
                 Ok(r) => {
@@ -389,24 +412,23 @@ impl RuleSources {
             }
         }
 
-        // ModIdsToFix.xml, possibly in a per-version subfolder.
-        if let Some(base) = resolve(
-            settings,
-            "external_no_version_warning",
-            "external_no_version_warning_repo_path",
-            "ModIdsToFix.xml",
-        ) {
+        // NoVersionWarning/ModIdsToFix.xml, preferring the per-game-version file.
+        if !disabled("external_no_version_warning") {
             let mm = game_version
                 .split('.')
                 .take(2)
                 .collect::<Vec<_>>()
                 .join(".");
-            let versioned = base.parent().map(|p| p.join(&mm).join("ModIdsToFix.xml"));
-            let path = if base.exists() {
-                Some(base)
-            } else {
-                versioned.filter(|p| p.exists())
-            };
+            let path = db_dirs()
+                .into_iter()
+                .flat_map(|d| {
+                    let nv = d.join("NoVersionWarning");
+                    [
+                        nv.join(&mm).join("ModIdsToFix.xml"),
+                        nv.join("ModIdsToFix.xml"),
+                    ]
+                })
+                .find(|p| p.exists());
             if let Some(text) = path.and_then(|p| fs::read(p).ok()) {
                 let root = xml::parse(&xml::decode_bytes(&text));
                 out.no_version_warning = root

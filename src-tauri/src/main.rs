@@ -195,6 +195,19 @@ async fn update_git_mod(state: St<'_>, id: ModId) -> Cmd<String> {
 
 #[tauri::command]
 #[specta::specta]
+async fn update_databases(state: St<'_>) -> Cmd<Vec<rimsort_core::dbupdate::DbResult>> {
+    let version = state.settings_view().game_version;
+    tauri::async_runtime::spawn_blocking(move || rimsort_core::dbupdate::update_all(&version))
+        .await
+        .map_err(|e| ErrorDto {
+            kind: "error".into(),
+            message: e.to_string(),
+        })
+        .map(Ok)?
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -258,6 +271,7 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            update_databases,
             update_git_mod,
             set_mod_meta,
             delete_mod,
