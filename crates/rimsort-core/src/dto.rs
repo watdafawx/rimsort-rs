@@ -133,3 +133,28 @@ pub struct LogChunk {
     /// Replace the displayed log instead of appending.
     pub reset: bool,
 }
+
+/// User-editable rules for one mod (stored in `userRules.json`).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
+pub struct UserRuleDto {
+    pub load_after: Vec<String>,
+    pub load_before: Vec<String>,
+    pub load_top: bool,
+    pub load_bottom: bool,
+}
+
+/// All rule sources for one mod, for the rule editor.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct ModRulesView {
+    pub package_id: String,
+    pub name: String,
+    pub about_load_after: Vec<String>,
+    pub about_load_before: Vec<String>,
+    pub community_load_after: Vec<String>,
+    pub community_load_before: Vec<String>,
+    pub community_top: bool,
+    pub community_bottom: bool,
+    pub user: UserRuleDto,
+    /// Warnings suppressed for this mod (`ignore.json`).
+    pub ignored: bool,
+}

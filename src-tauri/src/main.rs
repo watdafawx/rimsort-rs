@@ -146,6 +146,24 @@ async fn get_missing_dependencies(state: St<'_>) -> Cmd<Vec<rimsort_core::valida
 
 #[tauri::command]
 #[specta::specta]
+async fn get_mod_rules(state: St<'_>, id: ModId) -> Cmd<Option<rimsort_core::dto::ModRulesView>> {
+    Ok(state.mod_rules(id))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_user_rule(state: St<'_>, id: ModId, rule: rimsort_core::dto::UserRuleDto) -> Cmd<()> {
+    Ok(state.set_user_rule(id, rule)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_ignored(state: St<'_>, id: ModId, ignored: bool) -> Cmd<()> {
+    Ok(state.set_ignored(id, ignored)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn sort_active(state: St<'_>) -> Cmd<SortResultDto> {
     Ok(state.sort_active())
 }
@@ -209,6 +227,9 @@ fn builder() -> Builder<Wry> {
             get_mod,
             set_active,
             get_validation,
+            get_mod_rules,
+            set_user_rule,
+            set_ignored,
             get_missing_dependencies,
             sort_active,
             save_mods_config,

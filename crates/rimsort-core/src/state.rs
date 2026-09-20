@@ -4,7 +4,7 @@ use crate::{
     Error, ModId, Result, TaskId, TaskManager,
     dto::{
         ExportFormat, ImportResult, InstanceDto, ListsView, LogChunk, ModDetail, ModRow,
-        OptionsDto, SaveResult, SettingsView, SortResultDto,
+        ModRulesView, OptionsDto, SaveResult, SettingsView, SortResultDto, UserRuleDto,
     },
     modlist_io,
     mods::{self, ModIndex, ScanConfig},
@@ -530,6 +530,115 @@ Total # of mods: {}
             offset: c.offset.min(u64::from(u32::MAX)) as u32,
             reset: c.reset,
         })
+    }
+
+    // ── rules editing ───────────────────────────────────────────────────
+
+    pub fn mod_rules(&self, id: ModId) -> Option<ModRulesView> {
+        let s = self.session.read().unwrap();
+        let m = s.index.get(id)?;
+        Some(ModRulesView {
+            package_id: m.package_id.clone(),
+            name: m.name.clone(),
+            about_load_after: m.rules.load_after.clone(),
+            about_load_before: m.rules.load_before.clone(),
+            community_load_after: m.community.load_after.clone(),
+            community_load_before: m.community.load_before.clone(),
+            community_top: m.community.load_top,
+            community_bottom: m.community.load_bottom,
+            user: UserRuleDto {
+                load_after: m.user.load_after.clone(),
+                load_before: m.user.load_before.clone(),
+                load_top: m.user.load_top,
+                load_bottom: m.user.load_bottom,
+            },
+            ignored: s.rules.ignored.contains(&m.package_id),
+        })
+    }
+
+    /// Save user rules for a mod: persisted to our `userRules.json` and applied immediately.
+    pub fn set_user_rule(&self, id: ModId, rule: UserRuleDto) -> Result<()> {
+        let clean = |v: Vec<String>, own: &str| -> Vec<String> {
+            let mut out: Vec<String> = Vec::new();
+            for x in v
+                .into_iter()
+                .map(|x| x.trim().to_lowercase())
+                .filter(|x| !x.is_empty() && x != own)
+            {
+                if !out.contains(&x) {
+                    out.push(x);
+                }
+            }
+            out
+        };
+        let mut s = self.session.write().unwrap();
+        let pid = s
+            .index
+            .get(id)
+            .map(|m| m.package_id.clone())
+            .ok_or_else(|| Error::Other("Unknown mod".into()))?;
+        let ext = crate::rules::ExtRule {
+            load_after: clean(rule.load_after, &pid),
+            load_before: clean(rule.load_before, &pid),
+            load_top: rule.load_top,
+            load_bottom: rule.load_bottom,
+        };
+        let name_of = |p: &str| {
+            s.index
+                .by_package(p)
+                .next()
+                .map_or_else(|| p.to_owned(), |m| m.name.clone())
+        };
+        let text = crate::rules::write_user_rule(
+            crate::rules::read_db_text("userRules.json").as_deref(),
+            &pid,
+            &ext,
+            name_of,
+        )?;
+        settings::atomic_write(
+            &crate::rules::own_db_path("userRules.json"),
+            text.as_bytes(),
+        )?;
+
+        // Apply without a rescan (a rescan would discard unsaved list edits).
+        let mut mods = s.index.mods.clone();
+        for m in mods.iter_mut().filter(|m| m.package_id == pid) {
+            m.user = ext.clone();
+        }
+        s.index = Arc::new(ModIndex::new(
+            mods,
+            s.index.game_version.clone(),
+            s.index.scan_ms,
+        ));
+        let rules = Arc::make_mut(&mut s.rules);
+        rules
+            .user
+            .get_or_insert_with(Default::default)
+            .set(&pid, ext);
+        Ok(())
+    }
+
+    /// Suppress (or restore) warnings for a mod via `ignore.json`.
+    pub fn set_ignored(&self, id: ModId, ignored: bool) -> Result<()> {
+        let mut s = self.session.write().unwrap();
+        let pid = s
+            .index
+            .get(id)
+            .map(|m| m.package_id.clone())
+            .ok_or_else(|| Error::Other("Unknown mod".into()))?;
+        let text = crate::rules::write_ignore(
+            crate::rules::read_db_text("ignore.json").as_deref(),
+            &pid,
+            ignored,
+        )?;
+        settings::atomic_write(&crate::rules::own_db_path("ignore.json"), text.as_bytes())?;
+        let rules = Arc::make_mut(&mut s.rules);
+        if ignored {
+            rules.ignored.insert(pid);
+        } else {
+            rules.ignored.remove(&pid);
+        }
+        Ok(())
     }
 
     pub fn launch_game(&self) -> Result<()> {

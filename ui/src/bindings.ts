@@ -41,6 +41,21 @@ export const commands = {
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
+	getModRules: (id: ModId) => typedError<{
+	package_id: string,
+	name: string,
+	about_load_after: string[],
+	about_load_before: string[],
+	community_load_after: string[],
+	community_load_before: string[],
+	community_top: boolean,
+	community_bottom: boolean,
+	user: UserRuleDto,
+	/**  Warnings suppressed for this mod (`ignore.json`). */
+	ignored: boolean,
+} | null, ErrorDto>(__TAURI_INVOKE("get_mod_rules", { id })),
+	setUserRule: (id: ModId, rule: UserRuleDto) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_user_rule", { id, rule })),
+	setIgnored: (id: ModId, ignored: boolean) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_ignored", { id, ignored })),
 	getMissingDependencies: () => typedError<MissingDep[], ErrorDto>(__TAURI_INVOKE("get_missing_dependencies")),
 	sortActive: () => typedError<SortResultDto, ErrorDto>(__TAURI_INVOKE("sort_active")),
 	saveModsConfig: () => typedError<SaveResult, ErrorDto>(__TAURI_INVOKE("save_mods_config")),
@@ -171,6 +186,21 @@ export type ModRow = {
 	published_file_id: string | null,
 };
 
+/**  All rule sources for one mod, for the rule editor. */
+export type ModRulesView = {
+	package_id: string,
+	name: string,
+	about_load_after: string[],
+	about_load_before: string[],
+	community_load_after: string[],
+	community_load_before: string[],
+	community_top: boolean,
+	community_bottom: boolean,
+	user: UserRuleDto,
+	/**  Warnings suppressed for this mod (`ignore.json`). */
+	ignored: boolean,
+};
+
 export type ModType = "Local" | "SteamWorkshop" | "SteamCmd" | "Ludeon" | "Git" | "Unknown";
 
 export type ModWarnings = {
@@ -223,6 +253,14 @@ export type TaskEvent = { kind: "progress"; id: number; done: number; total: num
 
 /**  Emitted for every task state change (`task://` in the plan; one typed event carrying a tagged enum). */
 export type TaskUpdate = TaskEvent;
+
+/**  User-editable rules for one mod (stored in `userRules.json`). */
+export type UserRuleDto = {
+	load_after: string[],
+	load_before: string[],
+	load_top: boolean,
+	load_bottom: boolean,
+};
 
 export type ValidationView = {
 	/**  Only mods that have at least one warning. */

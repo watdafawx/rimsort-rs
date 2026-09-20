@@ -7,6 +7,7 @@
   import { call, commands, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
   import LogView from './lib/LogView.svelte'
   import MissingDeps from './lib/MissingDeps.svelte'
+  import RuleEditor from './lib/RuleEditor.svelte'
   import ModList from './lib/ModList.svelte'
   import SettingsDialog from './lib/SettingsDialog.svelte'
   import {
@@ -31,6 +32,7 @@
   let showMissing = $state(false)
   let listMenu = $state(false)
   let showDeps = $state(false)
+  let editRuleId = $state<string | null>(null)
   let view = $state<'mods' | 'log'>('mods')
 
   async function doImport() {
@@ -86,8 +88,11 @@
   const workshopUrl = (pfid: string) =>
     `https://steamcommunity.com/sharedfiles/filedetails/?id=${pfid}`
   function act(fn: () => unknown) {
-    menu = null
-    fn()
+    try {
+      fn()
+    } finally {
+      menu = null
+    }
   }
 
   onMount(() => {
@@ -375,6 +380,10 @@
         onclick={() => act(() => openUrl(d!.url))}>Open mod URL</button
       >
       <hr />
+      <button role="menuitem" onclick={() => act(() => (editRuleId = menu!.row.id))}
+        >Edit rules…</button
+      >
+      <hr />
       <button role="menuitem" onclick={() => act(() => copy(menu!.row.package_id))}
         >Copy package id</button
       >
@@ -384,6 +393,8 @@
       >
     </div>
   {/if}
+
+  {#if editRuleId}<RuleEditor id={editRuleId} onclose={() => (editRuleId = null)} />{/if}
 
   {#if showDeps}<MissingDeps onclose={() => (showDeps = false)} />{/if}
 
