@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d4a8a"/>
+      <stop offset="1" stop-color="#111a33"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fbaff"/>
+      <stop offset="1" stop-color="#4f86f0"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="6"/>
+  <!-- isometric package -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <path d="M512 210 L790 366 L512 522 L234 366 Z" fill="url(#face)" stroke="#dbe8ff" stroke-width="22"/>
+    <path d="M234 366 L512 522 L512 830 L234 674 Z" fill="#3563c4" stroke="#dbe8ff" stroke-width="22"/>
+    <path d="M790 366 L512 522 L512 830 L790 674 Z" fill="#274b9c" stroke="#dbe8ff" stroke-width="22"/>
+    <path d="M373 288 L651 444" fill="none" stroke="#dbe8ff" stroke-width="22"/>
+  </g>
+</svg>
