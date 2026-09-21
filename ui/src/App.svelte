@@ -8,6 +8,7 @@
   import Icon from './lib/Icon.svelte'
   import { initLanguage, t } from './lib/i18n.svelte'
   import { initTheme } from './lib/theme.svelte'
+  import { initZoom, stepZoom } from './lib/zoom.svelte'
   import type { ExportFormat, FolderKind, ModDetail, ModRow, WorkshopMatch } from './bindings'
   import {
     call,
@@ -198,6 +199,7 @@
   onMount(() => {
     initLanguage()
     initTheme()
+    void initZoom()
   })
 
   onMount(() => {
@@ -298,6 +300,13 @@
       menu = null
       listMenu = false
       foldersMenu = false
+    }
+    if (e.ctrlKey || e.metaKey) {
+      const dir = { '+': 1, '=': 1, '-': -1, _: -1, '0': 0 }[e.key]
+      if (dir !== undefined) {
+        e.preventDefault()
+        void stepZoom(dir as -1 | 0 | 1)
+      }
     }
     if ((e.ctrlKey || e.metaKey) && !(e.target instanceof HTMLInputElement)) {
       const k = e.key.toLowerCase()
@@ -850,13 +859,15 @@
   .topbar {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    flex-wrap: wrap; /* large interface sizes wrap the toolbar instead of clipping it */
+    gap: 0.35rem 0.5rem;
     padding: 0.45rem 0.75rem;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
     min-width: 0;
   }
   .brand {
+    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -875,6 +886,7 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    flex-wrap: wrap;
   }
   .vsep {
     width: 1px;

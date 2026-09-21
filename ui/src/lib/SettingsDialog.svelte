@@ -6,6 +6,7 @@
   import { i18n, LANGS, setLanguage } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
   import { setTheme, theme, type ThemeMode } from './theme.svelte'
+  import { setZoom, ZOOM_STEPS, zoom } from './zoom.svelte'
   import { app, loadSettings, refresh } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
@@ -247,6 +248,17 @@
           >
             {#each LANGS as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
           </select>
+        </div>
+        <div class="row">
+          <label for="zoom-select">Interface size</label>
+          <select
+            id="zoom-select"
+            value={zoom.level}
+            onchange={(e) => setZoom(Number(e.currentTarget.value))}
+          >
+            {#each ZOOM_STEPS as z (z)}<option value={z}>{Math.round(z * 100)}%</option>{/each}
+          </select>
+          <span class="dim">Ctrl + / Ctrl − / Ctrl 0</span>
         </div>
       </fieldset>
     {/if}
