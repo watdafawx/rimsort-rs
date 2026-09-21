@@ -7,9 +7,11 @@
   import type { ModRow, Warning } from '../bindings'
   import Icon from './Icon.svelte'
   import { t } from './i18n.svelte'
+  import { ago, prefs } from './prefs.svelte'
   import { describe, inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
   const ROW = 28
+  const isRecent = (r: ModRow) => r.modified > Date.now() / 1000 - prefs.recentDays * 86400
 
   let {
     title,
@@ -270,6 +272,9 @@
           <span class="tag {cls}">{tag}</span>
           <span class="name">{r.name}</span>
           <span class="author">{r.authors}</span>
+          {#if prefs.recentDays && isRecent(r)}<span class="upd" title="Changed {ago(r.modified)}"
+              ><Icon name="download" size={13} /></span
+            >{/if}
           {#if !r.valid}<span class="badge err" title="Invalid mod"
               ><Icon name="error" size={15} /></span
             >{:else if w}<span class="badge" class:err={w.some(isError)}
@@ -289,6 +294,11 @@
 </section>
 
 <style>
+  .upd {
+    display: inline-flex;
+    color: var(--accent);
+    flex: none;
+  }
   .list {
     display: flex;
     flex-direction: column;

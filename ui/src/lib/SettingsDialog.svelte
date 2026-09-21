@@ -8,6 +8,7 @@
   import { i18n, LANGS, setLanguage } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
   import { setTheme, theme, type ThemeMode } from './theme.svelte'
+  import { RECENT_CHOICES, prefs, setRecentDays } from './prefs.svelte'
   import { setZoom, ZOOM_STEPS, zoom } from './zoom.svelte'
   import { app, loadSettings, refresh } from './store.svelte'
 
@@ -278,6 +279,18 @@
             {#each ZOOM_STEPS as z (z)}<option value={z}>{Math.round(z * 100)}%</option>{/each}
           </select>
           <span class="dim">Ctrl + / Ctrl − / Ctrl 0</span>
+        </div>
+        <div class="row">
+          <label for="recent-select">Mark recently changed mods</label>
+          <select
+            id="recent-select"
+            value={prefs.recentDays}
+            onchange={(e) => setRecentDays(Number(e.currentTarget.value))}
+          >
+            {#each RECENT_CHOICES as d (d)}
+              <option value={d}>{d === 0 ? 'Off' : `Last ${d} day${d === 1 ? '' : 's'}`}</option>
+            {/each}
+          </select>
         </div>
       </fieldset>
     {/if}
