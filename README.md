@@ -20,11 +20,17 @@ at an existing RimSort setup and it just works.
 - **Rules** — community rules DB + your own rules (editor writes RimSort's `userRules.json` format).
 - **Save/launch** — writes `ModsConfig.xml` with automatic timestamped backups; launches the game; Player.log viewer.
 - **Import/export** — RimSort JSON, ModsConfig/`.rml`/`.rws`, plain ids, clipboard reports.
+- **Downloads** — Workshop mods via SteamCMD (installed on demand), GitHub mods via git; missing dependencies and
+  missing-from-disk mods resolve to Workshop items through RimSort's Steam database.
+- **Search** — find text/regex/file names across every mod's files (Ctrl+Shift+F).
+- **Textures** — todds optimizer (downloaded on demand): presets, dry run, clean-up, live progress, cancel.
+- **Maintenance** — reset per-mod/game settings and clear Steam's download cache (always via the Recycle Bin);
+  warns before saving or launching while RimWorld is running.
 - **Extras** — per-mod colors/tags/notes (imported from RimSort's aux DB), delete to Recycle Bin, file watching with a
-  refresh banner, light/dark theme.
+  refresh banner, light/dark theme, UI in 11 languages (menus and main screen).
 
-See [plan/](plan/README.md) for the roadmap and what is still missing (Steam/SteamCMD downloads, git mods, todds,
-i18n, installers/updater).
+See [plan/](plan/README.md) for the roadmap and what is still missing (Steamworks subscribe, installers/updater,
+some translations).
 
 ## Run
 
