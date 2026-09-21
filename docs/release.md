@@ -30,3 +30,14 @@ target setup).
 
 `cargo tauri build --no-bundle` (release exe ≈ 20 MB, ~5 min cold) and `cargo tauri build --bundles nsis`
 (installer ≈ 5.4 MB) both succeed. Release builds are warning-free (`cargo clippy --release -p rimsort-rs`).
+
+## Portable mode
+
+Put an empty `portable.txt` next to `rimsort-rs.exe`: settings, databases, downloaded tools and logs then live in
+`data/` beside the executable instead of `%LOCALAPPDATA%\RimSort-rs` (`RIMSORT_RS_DATA_DIR` still overrides both).
+A portable zip is `rimsort-rs.exe` + `portable.txt` — no installer step is needed.
+
+## Crash reports
+
+A panic writes `crash-<unix>.txt` (message, thread, backtrace) into the log folder (Folders → RimSort-rs logs).
+Nothing is sent anywhere.

@@ -15,15 +15,39 @@ pub const DEFAULT_INSTANCE: &str = "Default";
 /// Keys never carried over when importing from RimSort.
 const SECRET_KEYS: &[&str] = &["github_token", "steam_apikey", "rentry_auth_code"];
 
-/// Where our own settings live (`RIMSORT_RS_DATA_DIR` overrides, used by tests/dev).
+/// Marker file next to the executable that switches to portable mode (data in `<exe dir>/data`).
+pub const PORTABLE_MARKER: &str = "portable.txt";
+
+/// Where our own settings live: `RIMSORT_RS_DATA_DIR` (tests/dev), else `<exe dir>/data` when a
+/// `portable.txt` sits next to the executable, else the per-user local data folder.
 pub fn data_dir() -> PathBuf {
-    std::env::var_os("RIMSORT_RS_DATA_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            dirs::data_local_dir()
-                .unwrap_or_else(|| PathBuf::from("."))
-                .join("RimSort-rs")
-        })
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(Path::to_path_buf));
+    data_dir_for(
+        std::env::var_os("RIMSORT_RS_DATA_DIR").map(PathBuf::from),
+        exe_dir,
+    )
+}
+
+pub fn is_portable() -> bool {
+    std::env::var_os("RIMSORT_RS_DATA_DIR").is_none()
+        && std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join(PORTABLE_MARKER)))
+            .is_some_and(|m| m.is_file())
+}
+
+fn data_dir_for(env: Option<PathBuf>, exe_dir: Option<PathBuf>) -> PathBuf {
+    if let Some(dir) = env {
+        return dir;
+    }
+    if let Some(exe) = exe_dir.filter(|d| d.join(PORTABLE_MARKER).is_file()) {
+        return exe.join("data");
+    }
+    dirs::data_local_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("RimSort-rs")
 }
 
 /// Where the Python RimSort keeps its settings, for import.
@@ -237,5 +261,19 @@ mod tests {
         let l = load(&p);
         assert!(!l.first_run && l.warning.is_none() && l.settings.current().is_some());
         assert!(!p.with_extension("tmp").exists());
+    }
+
+    #[test]
+    fn data_dir_env_beats_portable_beats_default() {
+        let tmp = std::env::temp_dir().join(format!("rs-portable-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        // No marker: default location.
+        assert!(data_dir_for(None, Some(tmp.clone())).ends_with("RimSort-rs"));
+        std::fs::write(tmp.join(PORTABLE_MARKER), "").unwrap();
+        assert_eq!(data_dir_for(None, Some(tmp.clone())), tmp.join("data"));
+        // The override always wins (tests/dev must never touch a portable folder by accident).
+        let over = tmp.join("elsewhere");
+        assert_eq!(data_dir_for(Some(over.clone()), Some(tmp.clone())), over);
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

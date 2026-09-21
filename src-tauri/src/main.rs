@@ -449,9 +449,38 @@ fn log_dir_of(app: &AppHandle) -> tauri::Result<PathBuf> {
             env!("CARGO_MANIFEST_DIR"),
             "/../debug/logs"
         )))
+    } else if rimsort_core::settings::is_portable() {
+        Ok(rimsort_core::settings::data_dir().join("logs"))
     } else {
         app.path().app_log_dir()
     }
+}
+
+/// Panic hook: log it and leave a self-contained `crash-<unix>.txt` (message, location, backtrace)
+/// next to the logs so a bug report doesn't depend on the user finding the right log line.
+fn install_crash_reporter(dir: PathBuf) {
+    std::panic::set_hook(Box::new(move |info| {
+        tracing::error!("panic: {info}");
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
+        let report = format!(
+            "RimSort-rs {} crashed
+
+{info}
+
+thread: {}
+
+backtrace:
+{}
+",
+            env!("CARGO_PKG_VERSION"),
+            std::thread::current().name().unwrap_or("<unnamed>"),
+            std::backtrace::Backtrace::force_capture()
+        );
+        let _ = std::fs::create_dir_all(&dir);
+        let _ = std::fs::write(dir.join(format!("crash-{stamp}.txt")), report);
+    }));
 }
 
 #[cfg(any(debug_assertions, test))]
@@ -479,7 +508,8 @@ fn main() {
         .setup(move |app| {
             builder.mount_events(app);
 
-            let appender = tracing_appender::rolling::daily(log_dir(app)?, "rimsort.log");
+            let logs = log_dir(app)?;
+            let appender = tracing_appender::rolling::daily(&logs, "rimsort.log");
             let (writer, guard) = tracing_appender::non_blocking(appender);
             let default = if cfg!(debug_assertions) {
                 "debug"
@@ -494,7 +524,7 @@ fn main() {
                 )
                 .init();
             app.manage(guard); // keep flush guard alive for app lifetime
-            std::panic::set_hook(Box::new(|info| tracing::error!("panic: {info}")));
+            install_crash_reporter(logs);
 
             app.manage(AppState::new(TaskManager::new(TauriSink(
                 app.handle().clone(),
@@ -508,6 +538,28 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn panic_leaves_a_crash_report() {
+        let dir = std::env::temp_dir().join(format!("rs-crash-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        super::install_crash_reporter(dir.clone());
+        let _ = std::thread::Builder::new()
+            .name("boom-thread".into())
+            .spawn(|| panic!("something broke"))
+            .unwrap()
+            .join();
+        let _ = std::panic::take_hook(); // restore the default hook for the other tests
+        let report = std::fs::read_dir(&dir)
+            .unwrap()
+            .flatten()
+            .find(|e| e.file_name().to_string_lossy().starts_with("crash-"))
+            .map(|e| std::fs::read_to_string(e.path()).unwrap())
+            .expect("a crash file");
+        assert!(report.contains("something broke") && report.contains("boom-thread"));
+        assert!(report.contains("backtrace:"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     /// Fails if `ui/src/bindings.ts` is stale vs. the Rust commands/types (run `just bindings` to fix).
     #[test]
     fn bindings_up_to_date() {
