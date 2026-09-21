@@ -18,6 +18,7 @@ pub mod rules;
 pub mod saves;
 pub mod search;
 pub mod settings;
+pub mod snapshots;
 pub mod sort;
 pub mod startup_impact;
 mod state;

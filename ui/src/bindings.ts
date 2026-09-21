@@ -90,6 +90,12 @@ export const commands = {
 	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
 	steamSubscribedIds: () => typedError<string[], ErrorDto>(__TAURI_INVOKE("steam_subscribed_ids")),
 	folderSize: (id: ModId) => typedError<number | null, ErrorDto>(__TAURI_INVOKE("folder_size", { id })),
+	listSnapshots: () => typedError<SnapshotInfo[], ErrorDto>(__TAURI_INVOKE("list_snapshots")),
+	saveSnapshot: (name: string) => typedError<null, ErrorDto>(__TAURI_INVOKE("save_snapshot", { name })),
+	deleteSnapshot: (name: string) => typedError<null, ErrorDto>(__TAURI_INVOKE("delete_snapshot", { name })),
+	loadSnapshot: (name: string) => typedError<ImportResult, ErrorDto>(__TAURI_INVOKE("load_snapshot", { name })),
+	snapshotIds: (name: string) => typedError<string[], ErrorDto>(__TAURI_INVOKE("snapshot_ids", { name })),
+	listFileIds: (path: string) => typedError<string[], ErrorDto>(__TAURI_INVOKE("list_file_ids", { path })),
 	sortPreview: () => typedError<SortPreviewDto, ErrorDto>(__TAURI_INVOKE("sort_preview")),
 	getDependents: (id: ModId) => typedError<DependentDto[], ErrorDto>(__TAURI_INVOKE("get_dependents", { id })),
 	getWorkshopMeta: (id: string) => typedError<{
@@ -436,6 +442,12 @@ export type SettingsView = {
 	warning: string | null,
 	checks: PathCheck[],
 	game_version: string,
+};
+
+export type SnapshotInfo = {
+	name: string,
+	created: number,
+	count: number,
 };
 
 /**  The order Sort would produce (empty when the rules contradict each other). */

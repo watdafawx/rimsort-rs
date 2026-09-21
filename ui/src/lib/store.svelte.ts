@@ -397,8 +397,17 @@ export async function sort() {
 
 /** Replace the active list from a file (JSON, ModsConfig/.rml/.rws XML, text, clipboard report). */
 export async function importList(path: string) {
+  await replaceActive(() => commands.importModlist(path))
+}
+
+/** Load a named snapshot as the active list (undoable). */
+export async function loadSnapshot(name: string) {
+  await replaceActive(() => commands.loadSnapshot(name))
+}
+
+async function replaceActive(load: () => ReturnType<typeof commands.importModlist>) {
   const before = snap()
-  const r = await call(commands.importModlist(path))
+  const r = await call(load())
   const l = await call(commands.getLists())
   undoStack.push(before)
   redoStack.length = 0

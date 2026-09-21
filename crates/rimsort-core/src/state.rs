@@ -1129,6 +1129,52 @@ Total # of mods: {}
         Ok(crate::troubleshoot::apply(&self.current_instance()?, fix)? as u32)
     }
 
+    fn instance_name(&self) -> String {
+        self.settings.read().unwrap().current_instance.clone()
+    }
+
+    pub fn list_snapshots(&self) -> Vec<crate::snapshots::SnapshotInfo> {
+        crate::snapshots::info(&self.instance_name())
+    }
+
+    /// Remember the current active list under `name`.
+    pub fn save_snapshot(&self, name: &str) -> Result<()> {
+        let ids = {
+            let s = self.session.read().unwrap();
+            modsconfig::config_ids(&s.index, &s.active)
+        };
+        crate::snapshots::save(&self.instance_name(), name, ids, crate::workshop::now())
+    }
+
+    pub fn delete_snapshot(&self, name: &str) -> Result<()> {
+        crate::snapshots::delete(&self.instance_name(), name)
+    }
+
+    pub fn snapshot_ids(&self, name: &str) -> Result<Vec<String>> {
+        crate::snapshots::get(&self.instance_name(), name)
+            .map(|s| s.package_ids)
+            .ok_or_else(|| Error::Other(format!("No snapshot called {name}")))
+    }
+
+    /// Replace the active list with a snapshot (not saved to disk until the user saves).
+    pub fn load_snapshot(&self, name: &str) -> Result<ImportResult> {
+        let ids = self.snapshot_ids(name)?;
+        let mut s = self.session.write().unwrap();
+        let active = modsconfig::resolve_active(&s.index, &ids);
+        let result = ImportResult {
+            imported: active.ids.len() as u32,
+            missing: active.missing.clone(),
+        };
+        s.active = active;
+        Ok(result)
+    }
+
+    /// Package ids of a mod list file (ModsConfig backup, exported list…), in order.
+    pub fn list_file_ids(&self, path: &str) -> Result<Vec<String>> {
+        let text = crate::xml::decode_bytes(&std::fs::read(path)?);
+        Ok(modlist_io::parse_list(&text)?.package_ids)
+    }
+
     /// Cached Steam details for a Workshop id.
     pub fn workshop_meta(&self, id: &str) -> Option<crate::workshop::WorkshopMeta> {
         self.workshop.read().unwrap().get(id).cloned()

@@ -38,6 +38,8 @@
   import HoverCard from './lib/HoverCard.svelte'
   import PkgList from './lib/PkgList.svelte'
   import SortPreview from './lib/SortPreview.svelte'
+  import CompareDialog from './lib/CompareDialog.svelte'
+  import SnapshotsDialog from './lib/SnapshotsDialog.svelte'
   import CommandPalette, { type PaletteAction } from './lib/CommandPalette.svelte'
   import newIcon from './assets/mod/new.png'
   import Duplicates from './lib/Duplicates.svelte'
@@ -96,6 +98,9 @@
   let showSearch = $state(false)
   let showPalette = $state(false)
   let showSortPreview = $state(false)
+  let showSnapshots = $state(false)
+  /** Compare dialog: undefined = closed, otherwise the initial source key. */
+  let compareWith = $state<string | undefined>(undefined)
   /** Warnings-only filter of the Active list (set by clicking the status chips). */
   let activeWarnOnly = $state(false)
   let focusReq = $state<{ id: string; n: number } | null>(null)
@@ -370,6 +375,8 @@
     { label: t('Rescan mods'), keys: 'F5', run: doRefresh },
     { label: t('Sort active list'), run: sortClicked },
     { label: t('Preview sort…'), run: () => (showSortPreview = true) },
+    { label: t('Snapshots…'), run: () => (showSnapshots = true) },
+    { label: t('Compare lists…'), run: () => (compareWith = 'save') },
     { label: t('Save load order'), keys: 'Ctrl+S', run: () => void trySave() },
     { label: t('Launch RimWorld'), run: () => void run() },
     { label: t('Undo'), keys: 'Ctrl+Z', run: undo },
@@ -538,6 +545,11 @@
             style:left="0"
           >
             <button role="menuitem" onclick={doImport}>{t('Import list…')}</button>
+            <button role="menuitem" onclick={() => (showSnapshots = true)}>{t('Snapshots…')}</button
+            >
+            <button role="menuitem" onclick={() => (compareWith = 'save')}
+              >{t('Compare lists…')}</button
+            >
             <button role="menuitem" onclick={() => (showBackups = true)}
               >{t('Restore from backup…')}</button
             >
@@ -1137,6 +1149,17 @@
       actions={paletteActions}
       onpickmod={pickFromPalette}
       onclose={() => (showPalette = false)}
+    />{/if}
+  {#if showSnapshots}<SnapshotsDialog
+      onclose={() => (showSnapshots = false)}
+      oncompare={(k) => {
+        showSnapshots = false
+        compareWith = k
+      }}
+    />{/if}
+  {#if compareWith !== undefined}<CompareDialog
+      initial={compareWith}
+      onclose={() => (compareWith = undefined)}
     />{/if}
   {#if showSortPreview}<SortPreview onclose={() => (showSortPreview = false)} />{/if}
   {#if showSearch}<SearchDialog onclose={() => (showSearch = false)} />{/if}

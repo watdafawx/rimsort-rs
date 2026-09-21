@@ -409,6 +409,42 @@ async fn sort_preview(state: St<'_>) -> Cmd<rimsort_core::dto::SortPreviewDto> {
 
 #[tauri::command]
 #[specta::specta]
+async fn list_snapshots(state: St<'_>) -> Cmd<Vec<rimsort_core::snapshots::SnapshotInfo>> {
+    Ok(state.list_snapshots())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn save_snapshot(state: St<'_>, name: String) -> Cmd<()> {
+    Ok(state.save_snapshot(&name)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn delete_snapshot(state: St<'_>, name: String) -> Cmd<()> {
+    Ok(state.delete_snapshot(&name)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn load_snapshot(state: St<'_>, name: String) -> Cmd<ImportResult> {
+    Ok(state.load_snapshot(&name)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn snapshot_ids(state: St<'_>, name: String) -> Cmd<Vec<String>> {
+    Ok(state.snapshot_ids(&name)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn list_file_ids(state: St<'_>, path: String) -> Cmd<Vec<String>> {
+    Ok(state.list_file_ids(&path)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn folder_size(state: St<'_>, id: ModId) -> Cmd<Option<f64>> {
     let state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || state.folder_size(id).map(|n| n as f64))
@@ -494,6 +530,12 @@ fn builder() -> Builder<Wry> {
             steam_set_subscribed,
             steam_subscribed_ids,
             folder_size,
+            list_snapshots,
+            save_snapshot,
+            delete_snapshot,
+            load_snapshot,
+            snapshot_ids,
+            list_file_ids,
             sort_preview,
             get_dependents,
             get_workshop_meta,
