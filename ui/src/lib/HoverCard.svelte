@@ -5,10 +5,11 @@
 
 <script lang="ts">
   import { convertFileSrc } from '@tauri-apps/api/core'
-  import type { ModDetail, ModRow, Warning } from '../bindings'
+  import type { ModDetail, ModRow, Warning, WorkshopMeta } from '../bindings'
   import { call, commands } from './ipc.svelte'
   import { t, T } from './i18n.svelte'
   import Icon from './Icon.svelte'
+  import steamIcon from '../assets/mod/steam_icon.png'
   import { ago, prefs } from './prefs.svelte'
   import { app, describe, isError } from './store.svelte'
 
@@ -47,6 +48,38 @@
     )
   })
 
+  // Steam details arrive from the background sync; look them up on every hover (in-memory, cheap).
+  let steam = $state<WorkshopMeta | null>(null)
+  $effect(() => {
+    const pfid = row.published_file_id
+    steam = null
+    if (!pfid) return
+    call(commands.getWorkshopMeta(pfid)).then(
+      (m) => {
+        if (row.published_file_id === pfid) steam = m
+      },
+      () => {},
+    )
+  })
+  const fmtCount = (n: number) =>
+    n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n)
+  /** Steam description without BBCode, cut to a couple of lines. */
+  const steamBlurb = $derived(
+    (steam?.description ?? '')
+      .replace(/\[img\][^[]*\[\/img\]/gi, ' ')
+      .replace(/https?:\/\/\S+/g, ' ')
+      .replace(/\[\/?[a-z0-9*]+(=[^\]]*)?\]/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 190),
+  )
+  const steamNewer = $derived(
+    !!steam &&
+      !steam.removed &&
+      !!detail?.workshop_updated &&
+      (steam.time_updated ?? 0) > detail.workshop_updated + 3600,
+  )
+
   const errors = $derived(warnings.filter(isError))
   const others = $derived(warnings.filter((w) => !isError(w)))
   const inSave = $derived(app.save ? app.save.package_ids.includes(row.package_id) : null)
@@ -66,10 +99,9 @@
   )
 
   // Beside the row (right if there is room, else left), vertically level with it and kept on screen.
-  let el = $state<HTMLDivElement>()
+  let h = $state(260)
   const pos = $derived.by(() => {
     const w = 340
-    const h = el?.offsetHeight ?? 260
     const left =
       rect.right + 12 + w < window.innerWidth ? rect.right + 12 : Math.max(8, rect.left - w - 12)
     const top = Math.max(8, Math.min(window.innerHeight - h - 8, rect.top - 8))
@@ -77,7 +109,13 @@
   })
 </script>
 
-<div class="card" bind:this={el} style:left="{pos.left}px" style:top="{pos.top}px" role="tooltip">
+<div
+  class="card"
+  bind:offsetHeight={h}
+  style:left="{pos.left}px"
+  style:top="{pos.top}px"
+  role="tooltip"
+>
   {#if detail?.preview}
     <img class="prev" src={convertFileSrc(detail.preview)} alt="" />
   {/if}
@@ -104,6 +142,15 @@
     {#each others as w, i (i)}
       <p class="line warn"><Icon name="alert" size={14} />{describe(w)}</p>
     {/each}
+    {#if steam?.removed}
+      <p class="line err">
+        <Icon name="error" size={14} />{t('No longer available on the Steam Workshop')}
+      </p>
+    {:else if steamNewer}
+      <p class="line warn">
+        <Icon name="alert" size={14} />{t('A newer version is on the Workshop')}
+      </p>
+    {/if}
     {#if row.unsupported_version && !others.some((w) => w.kind === 'VersionMismatch')}
       <p class="line warn">
         <Icon name="alert" size={14} />{t('Does not list support for this game version')}
@@ -125,6 +172,23 @@
         <dd>{new Date(detail.added * 1000).toLocaleDateString()}</dd>{/if}
     </dl>
 
+    {#if steam && !steam.removed}
+      <p class="steam">
+        <img src={steamIcon} alt="" width="14" height="14" />
+        {t('{n} subscribers', { n: fmtCount(steam.subscriptions ?? 0) })}
+        {#if steam.favorited}· {t('{n} favorites', { n: fmtCount(steam.favorited ?? 0) })}{/if}
+      </p>
+      {#if steam.tags?.length}
+        <p class="tags">
+          {#each (steam.tags ?? []).filter((g) => g !== 'Mod').slice(0, 8) as g (g)}<span
+              class="chip">{g}</span
+            >{/each}
+        </p>
+      {/if}
+      {#if steamBlurb}<p class="blurb">
+          {steamBlurb}{(steam.description ?? '').length > 190 ? '…' : ''}
+        </p>{/if}
+    {/if}
     {#if rel.length}
       <p class="rel">{rel.map(([k, n]) => `${n} ${t(k as string)}`).join(' · ')}</p>
     {/if}
@@ -154,7 +218,7 @@
   .prev {
     display: block;
     width: 100%;
-    max-height: 150px;
+    max-height: 110px;
     object-fit: cover;
     border-bottom: 1px solid var(--line);
   }
@@ -205,7 +269,7 @@
   }
   dl {
     display: grid;
-    grid-template-columns: max-content 1fr;
+    grid-template-columns: max-content minmax(0, 1fr);
     gap: 0.15rem 0.7rem;
     margin: 0;
     font-size: 0.88em;
@@ -220,6 +284,22 @@
   .mono {
     font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
     font-size: 0.95em;
+  }
+  .steam {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: 0.85em;
+    color: var(--dim);
+  }
+  .blurb {
+    margin: 0;
+    font-size: 0.83em;
+    color: var(--dim);
+    line-height: 1.35;
+    border-left: 2px solid var(--line-strong);
+    padding-left: 0.5rem;
   }
   .rel,
   .note {

@@ -381,6 +381,22 @@ async fn latest_save(state: St<'_>) -> Cmd<Option<rimsort_core::saves::SaveInfo>
 
 #[tauri::command]
 #[specta::specta]
+async fn get_workshop_meta(
+    state: St<'_>,
+    id: String,
+) -> Cmd<Option<rimsort_core::workshop::WorkshopMeta>> {
+    Ok(state.workshop_meta(&id))
+}
+
+/// Start the background Steam-details fetch; returns its task id, or None when everything is cached.
+#[tauri::command]
+#[specta::specta]
+async fn start_workshop_sync(state: St<'_>) -> Cmd<Option<TaskId>> {
+    Ok(state.inner().start_workshop_sync())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn folder_size(state: St<'_>, id: ModId) -> Cmd<Option<f64>> {
     let state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || state.folder_size(id).map(|n| n as f64))
@@ -466,6 +482,8 @@ fn builder() -> Builder<Wry> {
             steam_set_subscribed,
             steam_subscribed_ids,
             folder_size,
+            get_workshop_meta,
+            start_workshop_sync,
             latest_save,
             open_folder,
             get_todds_options,

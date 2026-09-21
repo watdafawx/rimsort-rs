@@ -11,6 +11,8 @@ import { call, external, toast, waitTask } from './ipc.svelte'
 import { t } from './i18n.svelte'
 
 export const app = $state({
+  /** Background fetch of Steam Workshop details (0 = idle). */
+  syncTask: 0,
   /** Newest save game (its mod list drives the "new" markers), if any. */
   save: null as SaveInfo | null,
   settings: null as SettingsView | null,
@@ -183,6 +185,7 @@ export async function refresh(keep = false) {
     syncDepth()
     app.loaded = true
     revalidate(0)
+    void startWorkshopSync()
   } finally {
     app.scanning = false
   }
@@ -309,6 +312,21 @@ export async function steamSubscribe(ids: string[], subscribe: boolean) {
         : t('Unsubscribed — Steam will remove it shortly'),
       5000,
     )
+  }
+}
+
+/** Fetch Steam details for Workshop mods in the background (slow on purpose; results are cached on disk). */
+export async function startWorkshopSync() {
+  if (app.syncTask) return
+  try {
+    const id = await call(commands.startWorkshopSync())
+    if (!id) return
+    app.syncTask = id
+    await waitTask(id)
+  } catch {
+    /* offline or Steam unreachable: the cards just show less */
+  } finally {
+    app.syncTask = 0
   }
 }
 

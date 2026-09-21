@@ -44,6 +44,8 @@ pub struct AppState {
     last_save: Arc<Mutex<Option<Instant>>>,
     /// RimSort's Workshop database, parsed on first use (it is ~50 MB of JSON).
     steam_db: std::sync::OnceLock<Option<crate::steamdb::SteamDb>>,
+    /// Steam Workshop details fetched in the background (cached on disk).
+    workshop: RwLock<std::collections::HashMap<String, crate::workshop::WorkshopMeta>>,
     /// Startup-impact report of the current instance, re-read when the file's mtime changes.
     startup_report: Mutex<
         Option<(
@@ -102,6 +104,7 @@ impl AppState {
             watcher: Mutex::new(None),
             last_save: Arc::default(),
             steam_db: Default::default(),
+            workshop: RwLock::new(crate::workshop::load_cache()),
             startup_report: Default::default(),
         })
     }
@@ -1111,6 +1114,40 @@ Total # of mods: {}
 
     pub fn troubleshoot_apply(&self, fix: crate::troubleshoot::Fix) -> Result<u32> {
         Ok(crate::troubleshoot::apply(&self.current_instance()?, fix)? as u32)
+    }
+
+    /// Cached Steam details for a Workshop id.
+    pub fn workshop_meta(&self, id: &str) -> Option<crate::workshop::WorkshopMeta> {
+        self.workshop.read().unwrap().get(id).cloned()
+    }
+
+    /// Fetch Steam details for every installed Workshop mod that is missing from (or stale in) the cache,
+    /// slowly and in the background. None when there is nothing to fetch.
+    pub fn start_workshop_sync(self: &Arc<Self>) -> Option<TaskId> {
+        let ids: Vec<String> = {
+            let s = self.session.read().unwrap();
+            s.index
+                .mods
+                .iter()
+                .filter(|m| m.mod_type == mods::ModType::SteamWorkshop)
+                .filter_map(|m| m.published_file_id.clone())
+                .collect()
+        };
+        let todo = crate::workshop::needs_fetch(
+            &self.workshop.read().unwrap(),
+            &ids,
+            crate::workshop::now(),
+        );
+        if todo.is_empty() {
+            return None;
+        }
+        let me = self.clone();
+        Some(self.tasks.spawn(move |ctx| {
+            crate::workshop::sync(&ids, ctx, |cache| {
+                *me.workshop.write().unwrap() = cache.clone();
+            })
+            .map(|_| ())
+        }))
     }
 
     /// Folder size of a mod in bytes (walks the folder; call off the UI thread).

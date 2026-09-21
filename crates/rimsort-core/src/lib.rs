@@ -29,6 +29,7 @@ pub mod todds;
 pub mod troubleshoot;
 pub mod validate;
 pub mod watch;
+pub mod workshop;
 mod xml;
 
 pub use error::{Error, ErrorDto, Result};

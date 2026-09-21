@@ -90,6 +90,25 @@ export const commands = {
 	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
 	steamSubscribedIds: () => typedError<string[], ErrorDto>(__TAURI_INVOKE("steam_subscribed_ids")),
 	folderSize: (id: ModId) => typedError<number | null, ErrorDto>(__TAURI_INVOKE("folder_size", { id })),
+	getWorkshopMeta: (id: string) => typedError<{
+	id?: string,
+	title?: string,
+	/**  Steam's description (BBCode), cut to a preview. */
+	description?: string,
+	subscriptions?: number,
+	favorited?: number,
+	tags?: string[],
+	time_created?: number,
+	time_updated?: number,
+	file_size?: number,
+	/**  Steam no longer lists the item (deleted, or hidden by its author). */
+	removed?: boolean,
+	banned?: boolean,
+	/**  When we fetched this (unix seconds). */
+	fetched?: number,
+} | null, ErrorDto>(__TAURI_INVOKE("get_workshop_meta", { id })),
+	/**  Start the background Steam-details fetch; returns its task id, or None when everything is cached. */
+	startWorkshopSync: () => typedError<number | null, ErrorDto>(__TAURI_INVOKE("start_workshop_sync")),
 	latestSave: () => typedError<{
 	/**  File name without extension. */
 	name: string,
@@ -487,6 +506,24 @@ export type WorkshopMatch = {
 	package_id: string,
 	workshop_id: string,
 	name: string,
+};
+
+export type WorkshopMeta = {
+	id?: string,
+	title?: string,
+	/**  Steam's description (BBCode), cut to a preview. */
+	description?: string,
+	subscriptions?: number,
+	favorited?: number,
+	tags?: string[],
+	time_created?: number,
+	time_updated?: number,
+	file_size?: number,
+	/**  Steam no longer lists the item (deleted, or hidden by its author). */
+	removed?: boolean,
+	banned?: boolean,
+	/**  When we fetched this (unix seconds). */
+	fetched?: number,
 };
 
 /* Tauri Specta runtime */

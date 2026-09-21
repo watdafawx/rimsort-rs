@@ -907,6 +907,22 @@
           onclick={() => (showDups = true)}
           >{t('{n} duplicate package ids', { n: app.duplicates })}</button
         >{/if}
+      {#if app.syncTask && tasks[app.syncTask]}
+        {@const sy = tasks[app.syncTask]}
+        <span
+          class="chip"
+          use:tip={{
+            title: T('Fetching Steam details'),
+            text: T(
+              'Reading subscriber counts, tags and removal status for your Workshop mods, slowly in the background. Results are cached.',
+            ),
+          }}
+          ><Icon name="download" size={13} />{t('Steam details {done}/{total}', {
+            done: sy.done,
+            total: sy.total,
+          })}</span
+        >
+      {/if}
       <span class="spacer"></span>
       <span class="dim"
         >{app.communityRules
