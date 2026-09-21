@@ -1,4 +1,4 @@
-import { commands, type ModRow, type SettingsView, type Warning } from '../bindings'
+import { commands, type CycleDto, type ModRow, type SettingsView, type Warning } from '../bindings'
 import { call, external, toast, waitTask } from './ipc.svelte'
 
 export const app = $state({
@@ -14,7 +14,7 @@ export const app = $state({
   scanTask: 0,
   /** Background job (e.g. SteamCMD download) shown in the status bar; 0 = none. */
   jobTask: 0,
-  cycles: [] as string[][],
+  cycles: [] as CycleDto[],
   loaded: false,
   /** Active-list warnings keyed by mod id. */
   warnings: {} as Record<string, Warning[]>,

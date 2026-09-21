@@ -91,6 +91,13 @@ export type BackupInfo = {
 	count: number,
 };
 
+export type CycleDto = {
+	/**  Package ids in the cycle. */
+	members: string[],
+	/**  The rules forming it, with their source. */
+	rules: string[],
+};
+
 export type DbResult = {
 	name: string,
 	status: DbStatus,
@@ -304,8 +311,8 @@ export type SettingsView = {
 
 export type SortResultDto = {
 	ok: boolean,
-	/**  Package-id cycles when `ok` is false. */
-	cycles: string[][],
+	/**  Cycles that block sorting when `ok` is false. */
+	cycles: CycleDto[],
 	changed: boolean,
 };
 

@@ -484,9 +484,15 @@ impl AppState {
         let mut s = self.session.write().unwrap();
         let out = sort::sort_active(&s.index, &s.active.ids, settings);
         if !out.cycles.is_empty() {
+            let details = sort::explain_cycles(&s.index, &out.cycles);
             return SortResultDto {
                 ok: false,
-                cycles: out.cycles,
+                cycles: out
+                    .cycles
+                    .into_iter()
+                    .zip(details)
+                    .map(|(members, rules)| crate::dto::CycleDto { members, rules })
+                    .collect(),
                 changed: false,
             };
         }

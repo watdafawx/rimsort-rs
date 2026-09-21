@@ -109,9 +109,17 @@ pub struct MetaDto {
 #[derive(Debug, Clone, Serialize, Type)]
 pub struct SortResultDto {
     pub ok: bool,
-    /// Package-id cycles when `ok` is false.
-    pub cycles: Vec<Vec<String>>,
+    /// Cycles that block sorting when `ok` is false.
+    pub cycles: Vec<CycleDto>,
     pub changed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct CycleDto {
+    /// Package ids in the cycle.
+    pub members: Vec<String>,
+    /// The rules forming it, with their source.
+    pub rules: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]

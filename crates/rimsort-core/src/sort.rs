@@ -208,6 +208,62 @@ fn levels(graph: &Graph) -> Result<Vec<Vec<String>>, Vec<Vec<String>>> {
     Ok(out)
 }
 
+/// Human-readable rules that form each cycle: "A must load after B  [mod|community|your rules]".
+/// Only rules whose both ends are in the same cycle are listed.
+pub fn explain_cycles(index: &ModIndex, cycles: &[Vec<String>]) -> Vec<Vec<String>> {
+    let name = |pid: &str| {
+        index
+            .by_package(pid)
+            .next()
+            .map_or_else(|| pid.to_owned(), |m| format!("{} ({pid})", m.name))
+    };
+    cycles
+        .iter()
+        .map(|cycle| {
+            let members: HashSet<&str> = cycle.iter().map(String::as_str).collect();
+            let mut lines = Vec::new();
+            for pid in cycle {
+                let Some(m) = index.by_package(pid).next() else {
+                    continue;
+                };
+                let sources: [(&str, &[String], &[String]); 3] = [
+                    ("mod's About.xml", &m.rules.load_after, &m.rules.load_before),
+                    (
+                        "community rules",
+                        &m.community.load_after,
+                        &m.community.load_before,
+                    ),
+                    ("your rules", &m.user.load_after, &m.user.load_before),
+                ];
+                for (src, after, before) in sources {
+                    for o in after
+                        .iter()
+                        .filter(|o| members.contains(o.as_str()) && *o != pid)
+                    {
+                        lines.push(format!(
+                            "{} must load after {}  [{src}]",
+                            name(pid),
+                            name(o)
+                        ));
+                    }
+                    for o in before
+                        .iter()
+                        .filter(|o| members.contains(o.as_str()) && *o != pid)
+                    {
+                        lines.push(format!(
+                            "{} must load before {}  [{src}]",
+                            name(pid),
+                            name(o)
+                        ));
+                    }
+                }
+            }
+            lines.sort();
+            lines
+        })
+        .collect()
+}
+
 pub fn sort_active(index: &ModIndex, active: &[ModId], settings: SortSettings) -> SortOutcome {
     let c = compile(index, settings);
 
@@ -366,6 +422,30 @@ mod tests {
                 "a.mod"
             ]
         );
+    }
+
+    #[test]
+    fn cycles_are_explained_with_their_sources() {
+        let mut a = mk("a", "A", &["b"], &[], &[]);
+        a.user.load_after = vec!["b".into()]; // same edge again, from the user's rules
+        let idx = ModIndex::new(
+            vec![
+                a,
+                mk("b", "B", &["a"], &[], &[]),
+                mk("c", "C", &["a"], &[], &[]),
+            ],
+            String::new(),
+            0,
+        );
+        let lines = &explain_cycles(&idx, &[vec!["a".into(), "b".into()]])[0];
+        assert_eq!(
+            lines,
+            &[
+                "A (a) must load after B (b)  [mod's About.xml]",
+                "A (a) must load after B (b)  [your rules]",
+                "B (b) must load after A (a)  [mod's About.xml]",
+            ]
+        ); // C is not in the cycle
     }
 
     #[test]

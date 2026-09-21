@@ -483,10 +483,18 @@
         onkeydown={() => {}}
       >
         <h2>Unable to sort</h2>
-        <p>Circular dependencies were found in the active list:</p>
-        <ul>
-          {#each app.cycles as c (c.join())}<li>{c.join(' ⇄ ')}</li>{/each}
-        </ul>
+        <p>
+          These load-order rules contradict each other, so no valid order exists. Remove or change
+          one rule in each group (mods → right-click → Edit rules… for community/your rules).
+        </p>
+        {#each app.cycles as c (c.members.join())}
+          <section class="cycle">
+            <strong>{c.members.join(' ⇄ ')}</strong>
+            <ul>
+              {#each c.rules as line (line)}<li>{line}</li>{/each}
+            </ul>
+          </section>
+        {/each}
         <button onclick={() => (app.cycles = [])}>Close</button>
       </div>
     </div>
@@ -694,6 +702,17 @@
   }
   .menu .danger-item:not(:disabled) {
     color: #f56565;
+  }
+  .cycle {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.5rem 0.7rem;
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+  }
+  .cycle ul {
+    margin: 0.3rem 0 0;
+    padding-left: 1.1rem;
   }
   .dropdown {
     position: relative;
