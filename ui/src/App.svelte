@@ -6,7 +6,7 @@
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import Icon from './lib/Icon.svelte'
-  import { initLanguage, t } from './lib/i18n.svelte'
+  import { initLanguage, t, T } from './lib/i18n.svelte'
   import { initTheme } from './lib/theme.svelte'
   import { initZoom, stepZoom } from './lib/zoom.svelte'
   import type { ExportFormat, FolderKind, ModDetail, ModRow, WorkshopMatch } from './bindings'
@@ -57,12 +57,12 @@
   let showSettings = $state(false)
   let detail = $state<ModDetail | null>(null)
   const FOLDERS: [FolderKind, string][] = [
-    ['Game', 'RimWorld folder'],
-    ['Config', 'Config folder (ModsConfig.xml)'],
-    ['Local', 'Local mods'],
-    ['Workshop', 'Steam Workshop mods'],
-    ['Data', 'RimSort-rs data'],
-    ['Logs', 'RimSort-rs logs'],
+    ['Game', T('RimWorld folder')],
+    ['Config', T('Config folder (ModsConfig.xml)')],
+    ['Local', T('Local mods')],
+    ['Workshop', T('Steam Workshop mods')],
+    ['Data', T('RimSort-rs data')],
+    ['Logs', T('RimSort-rs logs')],
   ]
   let showMissing = $state(false)
   let missingMatches = $state<WorkshopMatch[]>([])
@@ -93,9 +93,9 @@
   }
 
   const EXPORTS: { format: ExportFormat; label: string; file: string; ext: string }[] = [
-    { format: 'Xml', label: 'Export as ModsConfig XML…', file: 'ModsConfig', ext: 'xml' },
-    { format: 'Json', label: 'Export as RimSort JSON…', file: 'modlist', ext: 'json' },
-    { format: 'PackageIds', label: 'Export package ids…', file: 'modlist', ext: 'txt' },
+    { format: 'Xml', label: T('Export as ModsConfig XML…'), file: 'ModsConfig', ext: 'xml' },
+    { format: 'Json', label: T('Export as RimSort JSON…'), file: 'modlist', ext: 'json' },
+    { format: 'PackageIds', label: T('Export package ids…'), file: 'modlist', ext: 'txt' },
   ]
   async function doExport(x: (typeof EXPORTS)[number]) {
     const p = await pickSave({
@@ -104,12 +104,12 @@
     })
     if (p) {
       await call(commands.exportModlist(p, x.format))
-      toast('Exported', 2500)
+      toast(t('Exported'), 2500)
     }
   }
   async function copyList(format: ExportFormat, what: string) {
     await navigator.clipboard.writeText(await call(commands.exportModlistText(format)))
-    toast(`${what} copied`, 2000)
+    toast(what === 'Report' ? t('Report copied') : t('Package ids copied'), 2000)
   }
   let menu = $state<{
     x: number
@@ -133,13 +133,13 @@
   }
 
   const copy = (text: string) =>
-    navigator.clipboard.writeText(text).then(() => toast('Copied', 1500))
+    navigator.clipboard.writeText(text).then(() => toast(t('Copied'), 1500))
   const workshopUrl = (pfid: string) =>
     `https://steamcommunity.com/sharedfiles/filedetails/?id=${pfid}`
   async function updateGit(id: string) {
-    toast('Running git pull…', 2000)
+    toast(t('Running git pull…'), 2000)
     const out = await call(commands.updateGitMod(id))
-    toast(out.split('\n').slice(-1)[0] || 'Up to date', 5000)
+    toast(out.split('\n').slice(-1)[0] || t('Up to date'), 5000)
   }
   const steamUrl = (pfid: string) => `steam://url/CommunityFilePage/${pfid}`
   function act(fn: () => unknown) {
@@ -190,7 +190,7 @@
   // Warn before closing the window with unsaved list changes.
   onMount(() => {
     const un = getCurrentWindow().onCloseRequested((e) => {
-      if (app.dirty && !confirm('You have unsaved changes. Close without saving?'))
+      if (app.dirty && !confirm(t('You have unsaved changes. Close without saving?')))
         e.preventDefault()
     })
     return () => un.then((f) => f())
@@ -228,14 +228,14 @@
   }
 
   async function switchInstance(name: string) {
-    if (app.dirty && !confirm('Discard unsaved changes?')) return
+    if (app.dirty && !confirm(t('Discard unsaved changes?'))) return
     await call(commands.switchInstance(name))
     await loadSettings()
     await refresh()
   }
 
   async function doRefresh() {
-    if (app.dirty && !confirm('Discard unsaved changes and rescan?')) return
+    if (app.dirty && !confirm(t('Discard unsaved changes and rescan?'))) return
     await refresh()
   }
 
@@ -243,7 +243,9 @@
     if (
       (await call(commands.gameRunning())) &&
       !confirm(
-        'RimWorld is running. It rewrites ModsConfig.xml when it closes, which would undo this save. Save anyway?',
+        t(
+          'RimWorld is running. It rewrites ModsConfig.xml when it closes, which would undo this save. Save anyway?',
+        ),
       )
     )
       return
@@ -252,17 +254,17 @@
 
   async function run() {
     if (await call(commands.gameRunning())) {
-      toast('RimWorld is already running', 3000)
+      toast(t('RimWorld is already running'), 3000)
       return
     }
     if (
       app.dirty &&
-      !confirm('You have unsaved changes; RimWorld will use the last saved list. Launch anyway?')
+      !confirm(t('You have unsaved changes; RimWorld will use the last saved list. Launch anyway?'))
     )
       return
     const todds = await call(commands.getToddsOptions())
     if (todds.auto_before_launch) {
-      toast('Optimizing textures before launch…', 2500)
+      toast(t('Optimizing textures before launch…'), 2500)
       // The saved options apply; a failed run is reported by the job itself and aborts the launch.
       if (
         !(await runTodds(
@@ -271,7 +273,7 @@
             dry_run: false,
             preset: todds.preset === 'Clean' ? 'Optimized' : todds.preset,
           },
-          'Textures optimized',
+          t('Textures optimized'),
         ))
       )
         return
@@ -396,14 +398,14 @@
             >
             <hr />
             {#each EXPORTS as x (x.format)}
-              <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
+              <button role="menuitem" onclick={() => doExport(x)}>{t(x.label)}</button>
             {/each}
             <hr />
             <button role="menuitem" onclick={() => copyList('Report', 'Report')}
               >{t('Copy report')}</button
             >
             <button role="menuitem" onclick={() => copyList('PackageIds', 'Package ids')}>
-              Copy package ids
+              {t('Copy package ids')}
             </button>
           </div>
         {/if}
@@ -482,7 +484,9 @@
           style:right="0"
         >
           {#each FOLDERS as [kind, label] (kind)}
-            <button role="menuitem" onclick={() => call(commands.openFolder(kind))}>{label}</button>
+            <button role="menuitem" onclick={() => call(commands.openFolder(kind))}
+              >{t(label)}</button
+            >
           {/each}
         </div>
       {/if}

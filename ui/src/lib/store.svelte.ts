@@ -7,6 +7,7 @@ import {
   type Warning,
 } from '../bindings'
 import { call, external, toast, waitTask } from './ipc.svelte'
+import { t } from './i18n.svelte'
 
 export const app = $state({
   settings: null as SettingsView | null,
@@ -192,9 +193,11 @@ async function offerDependencies(enabled: ModRow[]) {
   const wanted = missing.filter((d) => d.installed && d.required_by.some((n) => names.has(n)))
   if (!wanted.length) return
   toast(
-    `${wanted.length} required mod${wanted.length === 1 ? ' is' : 's are'} installed but inactive`,
+    wanted.length === 1
+      ? t('{n} required mod is installed but inactive', { n: 1 })
+      : t('{n} required mods are installed but inactive', { n: wanted.length }),
     12000,
-    { label: 'Enable', run: () => void enable(wanted.map((d) => d.installed!)) },
+    { label: t('Enable'), run: () => void enable(wanted.map((d) => d.installed!)) },
   )
 }
 
@@ -203,7 +206,7 @@ export async function enable(ids: string[], beforeId: string | null = null, offe
   const set = new Set(ids)
   const moving = app.inactive.filter((r) => set.has(r.id))
   const bad = moving.filter((r) => !r.valid)
-  if (bad.length) toast(`Can't enable invalid mod: ${bad[0].name}`)
+  if (bad.length) toast(t("Can't enable invalid mod: {name}", { name: bad[0].name }))
   const ok = moving.filter((r) => r.valid)
   if (!ok.length) return
   remember()
@@ -278,7 +281,7 @@ async function runJob(start: Promise<number>, doneText: string): Promise<boolean
 
 /** Download Workshop items via SteamCMD. */
 export async function downloadMods(ids: string[]) {
-  if (app.jobTask) return toast('A download is already running')
+  if (app.jobTask) return toast(t('A download is already running'))
   await runJob(
     call(commands.downloadMods(ids)),
     `Downloaded ${ids.length} mod${ids.length === 1 ? '' : 's'}`,
@@ -288,7 +291,7 @@ export async function downloadMods(ids: string[]) {
 /** Run todds (texture optimizer / clean-up) as a background job. */
 export async function runTodds(options: ToddsOptions, doneText: string): Promise<boolean> {
   if (app.jobTask) {
-    toast('A background job is already running')
+    toast(t('A background job is already running'))
     return false
   }
   return runJob(call(commands.runTodds(options)), doneText)
@@ -296,7 +299,7 @@ export async function runTodds(options: ToddsOptions, doneText: string): Promise
 
 /** Copy a (Workshop) mod into the local mods folder. */
 export async function createLocalCopy(id: string) {
-  if (app.jobTask) return toast('A background job is already running')
+  if (app.jobTask) return toast(t('A background job is already running'))
   await runJob(
     call(commands.createLocalCopy(id)),
     'Local copy created — pick which copy to use in Duplicates',
@@ -325,7 +328,7 @@ export async function deleteMod(id: string) {
   syncDepth()
   if (wasActive) app.dirty = true
   revalidate(0)
-  toast('Moved to the Recycle Bin', 3000)
+  toast(t('Moved to the Recycle Bin'), 3000)
 }
 
 /** Disable everything except the base game and official expansions. */
@@ -337,7 +340,7 @@ export async function sort() {
   const before = snap()
   const r = await call(commands.sortActive())
   app.cycles = r.cycles
-  if (!r.ok) return toast('Sort failed: circular dependencies found')
+  if (!r.ok) return toast(t('Sort failed: circular dependencies found'))
   const l = await call(commands.getLists())
   if (r.changed) {
     undoStack.push(before)
@@ -347,7 +350,7 @@ export async function sort() {
   }
   app.active = l.active
   revalidate(0)
-  toast(r.changed ? 'Sorted' : 'Already sorted', 2500)
+  toast(r.changed ? t('Sorted') : t('Already sorted'), 2500)
 }
 
 /** Replace the active list from a file (JSON, ModsConfig/.rml/.rws XML, text, clipboard report). */
@@ -364,7 +367,9 @@ export async function importList(path: string) {
   app.dirty = true
   revalidate(0)
   toast(
-    `Imported ${r.imported} mods${r.missing.length ? `, ${r.missing.length} not installed` : ''}`,
+    r.missing.length
+      ? t('Imported {n} mods, {m} not installed', { n: r.imported, m: r.missing.length })
+      : t('Imported {n} mods', { n: r.imported }),
     4000,
   )
 }
@@ -372,5 +377,10 @@ export async function importList(path: string) {
 export async function save() {
   const r = await call(commands.saveModsConfig())
   app.dirty = false
-  toast(`Saved ${r.count} active mods${r.backup ? ' (previous file backed up)' : ''}`, 4000)
+  toast(
+    r.backup
+      ? t('Saved {n} active mods (previous file backed up)', { n: r.count })
+      : t('Saved {n} active mods', { n: r.count }),
+    4000,
+  )
 }
