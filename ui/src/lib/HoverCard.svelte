@@ -29,9 +29,12 @@
   let steam = $state<WorkshopMeta | null>(null)
   $effect(() => {
     const r = row
-    detail = cachedDetail(r.id)
-    steam = cachedSteam(r.published_file_id)
-    if (detail && (steam || !r.published_file_id)) return
+    // Read the caches into locals: reading `detail`/`steam` here would make this effect depend on what it writes.
+    const d = cachedDetail(r.id)
+    const st = cachedSteam(r.published_file_id)
+    detail = d
+    steam = st
+    if (d && (st || !r.published_file_id)) return
     prefetch(r).then(() => {
       if (row.id === r.id) {
         detail = cachedDetail(r.id)
