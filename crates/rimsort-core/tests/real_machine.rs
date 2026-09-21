@@ -155,11 +155,11 @@ fn sort_golden_configs() {
             _ => {}
         }
     }
-    if std::env::var_os("GOLDEN_ALPHA").is_some() {
-        let mut o = state.settings_view().options;
-        o.alphabetical_sort = true;
-        state.update_options(o).unwrap();
-    }
+    // GOLDEN_ALPHA / GOLDEN_DEPS mirror the same switches in py_sort.py.
+    let mut o = state.settings_view().options;
+    o.alphabetical_sort = std::env::var_os("GOLDEN_ALPHA").is_some();
+    o.dependencies_as_load_after = std::env::var_os("GOLDEN_DEPS").is_some();
+    state.update_options(o).unwrap();
     let l = state.lists();
     let mut by_pid = std::collections::HashMap::new();
     for r in l.active.iter().chain(&l.inactive).filter(|r| r.valid) {

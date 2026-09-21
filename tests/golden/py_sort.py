@@ -77,7 +77,7 @@ for path, m in mods.items():
     if isinstance(m, AboutXmlMod):
         by_pid.setdefault(str(m.package_id), []).append(path)
 
-compiled = CompiledDependencyData.build(mods, use_moddependencies_as_loadTheseBefore=False, use_alternative_package_ids=True)
+compiled = CompiledDependencyData.build(mods, use_moddependencies_as_loadTheseBefore=bool(os.environ.get("GOLDEN_DEPS")), use_alternative_package_ids=True)
 
 
 def run(config_path):
