@@ -13,7 +13,10 @@ export type TipContent = {
   keys?: string
 }
 
-const DELAY = 380
+const DELAY = 260
+/** Moving between neighbouring controls shortly after a tooltip closed shows the next one at once. */
+const WARM = 500
+let hiddenAt = 0
 let el: HTMLDivElement | null = null
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -28,6 +31,7 @@ function ensure(): HTMLDivElement {
 
 function hide() {
   clearTimeout(timer)
+  if (el?.classList.contains('on')) hiddenAt = Date.now()
   el?.classList.remove('on')
 }
 
@@ -73,7 +77,7 @@ export function tip(node: HTMLElement, content: TipContent | null) {
   const enter = () => {
     if (!c) return
     clearTimeout(timer)
-    timer = setTimeout(() => c && show(node, c), DELAY)
+    timer = setTimeout(() => c && show(node, c), Date.now() - hiddenAt < WARM ? 30 : DELAY)
   }
   node.addEventListener('mouseenter', enter)
   node.addEventListener('focus', enter)

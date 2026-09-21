@@ -1,4 +1,7 @@
 <script module lang="ts">
+  // Shared by both lists so moving from one list's row to the other's also counts as "warm".
+  let cardShown = false
+  let cardHiddenAt = 0
   // Shared between the two list instances so a drag can cross lists.
   let dragging: { from: string; ids: string[] } | null = null
 </script>
@@ -22,15 +25,25 @@
 
   /** Row height in px; the virtual scroll maths and the CSS both follow the density preference. */
   const ROW = $derived(ROW_HEIGHT[prefs.density])
+  // Rest for a moment before the card shows; once one has shown, moving to the next row is near-instant.
   let hoverTimer: ReturnType<typeof setTimeout> | undefined
   function hoverIn(r: ModRow, e: MouseEvent) {
     clearTimeout(hoverTimer)
     void prefetch(r) // warm the card's data while the delay runs
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    hoverTimer = setTimeout(() => onhover?.(r, rect), 450)
+    const warm = Date.now() - cardHiddenAt < 500
+    hoverTimer = setTimeout(
+      () => {
+        onhover?.(r, rect)
+        cardShown = true
+      },
+      warm ? 40 : 220,
+    )
   }
   function hoverOut() {
     clearTimeout(hoverTimer)
+    if (cardShown) cardHiddenAt = Date.now()
+    cardShown = false
     onhoverend?.()
   }
   const isRecent = (r: ModRow) => r.modified > Date.now() / 1000 - prefs.recentDays * 86400
