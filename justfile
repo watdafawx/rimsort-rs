@@ -52,6 +52,10 @@ golden:
     debug/pyvenv/Scripts/python.exe tests/golden/py_sort.py "$env:LOCALAPPDATA/RimSort/settings.json" debug/py_sorted.json
     node tests/golden/compare.mjs debug/py_sorted.json debug/rust_sorted.json
 
+# Golden sort on N shuffled/subset variants of your active list (seeded; slow: one Python scan)
+golden-multi n="12":
+    node tests/golden/multi.mjs {{n}}
+
 # Synthetic 5,000-mod benchmark (release): scan, lists, validate, sort
 bench:
     node scripts/gen_mods.mjs 5000 debug/synth

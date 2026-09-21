@@ -1,7 +1,8 @@
 # Sorting algorithm (spec)
 
 Port of RimSort's `Sorter` (`sort_controller.py`) + `topo_sort.py`. Verified identical to the Python output on a real
-584-mod list (`just golden`).
+584-mod list (`just golden`) and on 12 seeded shuffles/subsets of it (339–585 mods, `just golden-multi`), so the
+result does not depend on input order.
 
 ## Inputs
 - Every valid mod in the index (not just active ones) contributes rules; only **active** package ids are sorted.

@@ -77,20 +77,32 @@ for path, m in mods.items():
     if isinstance(m, AboutXmlMod):
         by_pid.setdefault(str(m.package_id), []).append(path)
 
-cfg = read_mods_config(config)
-active_paths = []
-for raw in cfg.activeMods:
-    pid = str(raw).lower().removesuffix("_steam")
-    if pid in by_pid:
-        active_paths.append(sorted(by_pid[pid])[0])
-
 compiled = CompiledDependencyData.build(mods, use_moddependencies_as_loadTheseBefore=False, use_alternative_package_ids=True)
-ok, sorted_paths = Sorter(SortMethod.TOPOLOGICAL, compiled, mods, set(active_paths)).sort()
 
-out = {
-    "ok": ok,
-    "before": [str(mods[p].package_id) for p in active_paths],
-    "sorted": [str(mods[p].package_id) for p in sorted_paths],
-}
-Path(sys.argv[2]).write_text(json.dumps(out, indent=1))
-print(f"ok={ok} active={len(active_paths)} sorted={len(sorted_paths)}")
+
+def run(config_path):
+    cfg = read_mods_config(config_path)
+    active_paths = []
+    for raw in cfg.activeMods:
+        pid = str(raw).lower().removesuffix("_steam")
+        if pid in by_pid:
+            active_paths.append(sorted(by_pid[pid])[0])
+    ok, sorted_paths = Sorter(SortMethod.TOPOLOGICAL, compiled, mods, set(active_paths)).sort()
+    return {
+        "ok": ok,
+        "before": [str(mods[p].package_id) for p in active_paths],
+        "sorted": [str(mods[p].package_id) for p in sorted_paths],
+    }
+
+
+# GOLDEN_DIR: sort every <dir>/*.xml config and write <dir>/<name>.py.json (mods are scanned only once).
+golden_dir = os.environ.get("GOLDEN_DIR")
+if golden_dir:
+    for cfg_file in sorted(Path(golden_dir).glob("*.xml")):
+        out = run(cfg_file)
+        cfg_file.with_suffix(".py.json").write_text(json.dumps(out))
+        print(f"{cfg_file.name}: ok={out['ok']} sorted={len(out['sorted'])}")
+else:
+    out = run(config)
+    Path(sys.argv[2]).write_text(json.dumps(out, indent=1))
+    print(f"ok={out['ok']} active={len(out['before'])} sorted={len(out['sorted'])}")

@@ -132,3 +132,79 @@ fn scan_sort_real_install() {
         assert_eq!(before.len(), after.len());
     }
 }
+
+/// Sort every `*.xml` ModsConfig in `GOLDEN_DIR` and write `<name>.rs.json` next to it, for
+/// `tests/golden/multi.mjs` to compare against RimSort's Python (`GOLDEN_DIR` mode of py_sort.py).
+#[test]
+#[ignore]
+fn sort_golden_configs() {
+    let Some(dir) = std::env::var_os("GOLDEN_DIR").map(std::path::PathBuf::from) else {
+        return;
+    };
+    let tmp = tempfile::tempdir().unwrap();
+    let (tx, rx) = mpsc::channel();
+    let state = AppState::with_settings_path(
+        TaskManager::new(Chan(Mutex::new(tx))),
+        tmp.path().join("s.json"),
+    );
+    state.start_scan(false).unwrap();
+    loop {
+        match rx.recv().unwrap() {
+            TaskEvent::Finished { .. } => break,
+            TaskEvent::Failed { error, .. } => panic!("{}", error.message),
+            _ => {}
+        }
+    }
+    let l = state.lists();
+    let mut by_pid = std::collections::HashMap::new();
+    for r in l.active.iter().chain(&l.inactive).filter(|r| r.valid) {
+        by_pid.entry(r.package_id.clone()).or_insert(r.id);
+    }
+    let mut files: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "xml"))
+        .collect();
+    files.sort();
+    for f in files {
+        let text = std::fs::read_to_string(&f).unwrap();
+        let ids: Vec<_> = text
+            .split("<li>")
+            .skip(1)
+            .filter_map(|c| c.split("</li>").next())
+            .filter_map(|p| {
+                by_pid.get(
+                    &p.trim()
+                        .to_lowercase()
+                        .trim_end_matches("_steam")
+                        .to_owned(),
+                )
+            })
+            .copied()
+            .collect();
+        state.set_active(ids);
+        let before: Vec<_> = state
+            .lists()
+            .active
+            .iter()
+            .map(|r| r.package_id.clone())
+            .collect();
+        let r = state.sort_active();
+        let after: Vec<_> = state
+            .lists()
+            .active
+            .iter()
+            .map(|r| r.package_id.clone())
+            .collect();
+        std::fs::write(
+            f.with_extension("rs.json"),
+            format!(
+                "{{\"ok\": {}, \"before\": {before:?}, \"sorted\": {after:?}}}",
+                r.ok
+            ),
+        )
+        .unwrap();
+        println!("{}: ok={} sorted={}", f.display(), r.ok, after.len());
+    }
+}
