@@ -24,6 +24,7 @@
   import DownloadDialog from './lib/DownloadDialog.svelte'
   import SearchDialog from './lib/SearchDialog.svelte'
   import ToddsDialog from './lib/ToddsDialog.svelte'
+  import { richText } from './lib/richtext'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MetaEditor from './lib/MetaEditor.svelte'
@@ -211,6 +212,14 @@
     })()
     return () => unlisten.then((f) => f())
   })
+
+  /** Links in a description open in the system browser, never inside the app window. */
+  function openDescLink(e: MouseEvent) {
+    const a = (e.target as Element).closest('a[href]')
+    if (!a) return
+    e.preventDefault()
+    void openUrl(a.getAttribute('href')!)
+  }
 
   async function select(row: ModRow) {
     detail = await call(commands.getMod(row.id))
@@ -600,7 +609,10 @@
         {#if detail.tags.length}<p class="dim">Tags: {detail.tags.join(', ')}</p>{/if}
         {#if detail.note}<p class="note">📝 {detail.note}</p>{/if}
         {#if detail.invalid_reason}<p class="bad">{detail.invalid_reason}</p>{/if}
-        <p class="desc">{detail.description}</p>
+        <div class="desc" role="presentation" onclick={openDescLink}>
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- richText() escapes everything and re-enables only a tag whitelist -->
+          {@html richText(detail.description)}
+        </div>
       {:else}
         <div class="empty">
           <Icon name="info" size={30} />
@@ -1003,6 +1015,37 @@
     font-size: 0.8em;
     color: var(--dim);
   }
+  .desc :global(a) {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .desc :global(a:hover) {
+    text-decoration: underline;
+  }
+  .desc :global(ul),
+  .desc :global(ol) {
+    margin: 0.2rem 0;
+    padding-left: 1.3rem;
+    white-space: normal;
+  }
+  .desc :global(blockquote) {
+    margin: 0.3rem 0;
+    padding: 0.1rem 0.7rem;
+    border-left: 3px solid var(--line-strong);
+    color: var(--dim);
+  }
+  .desc :global(.h) {
+    display: block;
+    font-size: 1.05em;
+    margin-top: 0.3rem;
+  }
+  .desc :global(.h1) {
+    font-size: 1.2em;
+  }
+  .desc :global(hr) {
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
   .desc {
     white-space: pre-wrap;
     font-size: 0.9em;
@@ -1011,6 +1054,7 @@
     color: color-mix(in srgb, var(--fg) 88%, var(--dim));
     border-top: 1px solid var(--line);
     padding-top: 0.7rem;
+    overflow-wrap: anywhere;
     margin-top: 0.8rem;
   }
   .note {
