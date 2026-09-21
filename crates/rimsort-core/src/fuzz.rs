@@ -85,7 +85,8 @@ const REPORT: &str =
 #[test]
 fn parsers_never_panic_on_mutated_input() {
     let mut rng = Rng(0xC0FFEE);
-    let targets: Vec<(&str, Box<dyn Fn(&str)>)> = vec![
+    type Target = (&'static str, Box<dyn Fn(&str)>);
+    let targets: Vec<Target> = vec![
         (CONFIG, Box::new(|s| drop(ModsConfig::parse(s)))),
         (CONFIG, Box::new(|s| drop(modlist_io::parse_list(s)))),
         (RULES, Box::new(|s| drop(rules::ExternalRules::parse(s)))),
