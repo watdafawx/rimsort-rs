@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { DupGroup } from '../bindings'
@@ -32,19 +33,21 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Duplicate mods"
+    aria-label={t('Duplicate mods')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Duplicate mods</h2>
+    <h2>{t('Duplicate mods')}</h2>
     {#if !groups.length}
-      <p class="dim">No package id is installed more than once.</p>
+      <p class="dim">{t('No package id is installed more than once.')}</p>
     {:else}
       <p class="dim">
-        RimWorld identifies mods by package id only, so exactly one copy of each can be active.
-        {app.dirty ? 'Changes are unsaved until you press Save.' : ''}
+        {t(
+          'RimWorld identifies mods by package id only, so exactly one copy of each can be active.',
+        )}
+        {app.dirty ? t('Changes are unsaved until you press Save.') : ''}
       </p>
       <div class="groups">
         {#each groups as g (g.package_id)}
@@ -58,9 +61,9 @@
                   <div class="path dim">{c.path}</div>
                 </div>
                 <div class="acts">
-                  {#if c.active}<span class="using">in use</span>
-                  {:else}<button onclick={() => use(c.id)}>Use this copy</button>{/if}
-                  <button onclick={() => revealItemInDir(c.path)}>Open folder</button>
+                  {#if c.active}<span class="using">{t('in use')}</span>
+                  {:else}<button onclick={() => use(c.id)}>{t('Use this copy')}</button>{/if}
+                  <button onclick={() => revealItemInDir(c.path)}>{t('Open folder')}</button>
                 </div>
               </div>
             {/each}
@@ -68,7 +71,7 @@
         {/each}
       </div>
     {/if}
-    <footer><button onclick={onclose}>Close</button></footer>
+    <footer><button onclick={onclose}>{t('Close')}</button></footer>
   </div>
 </div>
 

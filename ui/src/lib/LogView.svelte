@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './i18n.svelte'
   import { revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount, tick } from 'svelte'
   import { commands, toast } from './ipc.svelte'
@@ -70,21 +71,21 @@
 
   async function copyAll() {
     await navigator.clipboard.writeText(shown.map((l) => l.text).join('\n'))
-    toast(`Copied ${shown.length} lines`, 2000)
+    toast(t('Copied {n} lines', { n: shown.length }), 2000)
   }
 </script>
 
 <section class="log">
   <header>
     <strong>Player.log</strong>
-    <span class="err">{counts.err} errors</span>
-    <span class="warn">{counts.warn} warnings</span>
-    <label><input type="checkbox" bind:checked={problemsOnly} /> problems only</label>
-    <label><input type="checkbox" bind:checked={follow} /> follow</label>
-    <input type="search" placeholder="Search log…" bind:value={query} />
-    <button onclick={copyAll}>Copy</button>
-    <button onclick={() => path && revealItemInDir(path)} disabled={!path}>Open file</button>
-    <button onclick={() => (lines = [])}>Clear view</button>
+    <span class="err">{t('{n} errors', { n: counts.err })}</span>
+    <span class="warn">{t('{n} warnings', { n: counts.warn })}</span>
+    <label><input type="checkbox" bind:checked={problemsOnly} /> {t('problems only')}</label>
+    <label><input type="checkbox" bind:checked={follow} /> {t('follow')}</label>
+    <input type="search" placeholder={t('Search log…')} bind:value={query} />
+    <button onclick={copyAll}>{t('Copy')}</button>
+    <button onclick={() => path && revealItemInDir(path)} disabled={!path}>{t('Open file')}</button>
+    <button onclick={() => (lines = [])}>{t('Clear view')}</button>
   </header>
   {#if problem}
     <p class="empty">{problem}</p>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { revealItemInDir } from '@tauri-apps/plugin-opener'
   import type { SearchResult } from '../bindings'
   import { call, commands } from './ipc.svelte'
@@ -54,13 +55,13 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Search in mods"
+    aria-label={t('Search in mods')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Search in mods</h2>
+    <h2>{t('Search in mods')}</h2>
     <form
       onsubmit={(e) => {
         e.preventDefault()
@@ -70,26 +71,26 @@
       <div class="query">
         <input
           type="search"
-          placeholder="Text or pattern to find in mod files…"
-          aria-label="Search text"
+          placeholder={t('Text or pattern to find in mod files…')}
+          aria-label={t('Search text')}
           bind:value={text}
           use:focusNow
         />
         <button class="primary" type="submit" disabled={!text || busy}>
-          <Icon name="search" />{busy ? 'Searching…' : 'Search'}
+          <Icon name="search" />{busy ? t('Searching…') : t('Search')}
         </button>
       </div>
       <div class="opts">
-        <label class="check"><input type="checkbox" bind:checked={regex} /> Regex</label>
+        <label class="check"><input type="checkbox" bind:checked={regex} /> {t('Regex')}</label>
         <label class="check"
-          ><input type="checkbox" bind:checked={caseSensitive} /> Match case</label
+          ><input type="checkbox" bind:checked={caseSensitive} /> {t('Match case')}</label
         >
         <label class="check"
-          ><input type="checkbox" bind:checked={fileNames} /> File names too</label
+          ><input type="checkbox" bind:checked={fileNames} /> {t('File names too')}</label
         >
         <label class="ext"
-          >Extensions
-          <input type="text" bind:value={exts} placeholder="all text files" />
+          >{t('Extensions')}
+          <input type="text" bind:value={exts} placeholder={t('all text files')} />
         </label>
       </div>
     </form>
@@ -100,34 +101,46 @@
           <section>
             <h3>{g.name}</h3>
             {#each g.hits as h (h.rel + ':' + h.line)}
-              <button class="hit" title="Show in folder" onclick={() => revealItemInDir(h.path)}>
+              <button
+                class="hit"
+                title={t('Show in folder')}
+                onclick={() => revealItemInDir(h.path)}
+              >
                 <span class="where">{h.rel}{h.line ? `:${h.line}` : ''}</span>
                 <span class="line">{h.text}</span>
               </button>
             {/each}
           </section>
         {:else}
-          <p class="dim">No matches.</p>
+          <p class="dim">{t('No matches.')}</p>
         {/each}
       {:else}
         <p class="dim">
-          Searches every installed mod’s files. Results are grouped by mod; click one to show the
-          file in your file manager.
+          {t(
+            'Searches every installed mod’s files. Results are grouped by mod; click one to show the file in your file manager.',
+          )}
         </p>
       {/if}
     </div>
     <footer>
       <span class="dim status">
         {#if result}
-          {result.hits.length} match{result.hits.length === 1 ? '' : 'es'} in {groups.length} mod{groups.length ===
-          1
-            ? ''
-            : 's'} · {result.files_searched} files · {result.ms} ms{result.truncated
-            ? ' · stopped at the result limit, refine your search'
+          {result.hits.length === 1 && groups.length === 1
+            ? t('1 match in 1 mod · {f} files · {ms} ms', {
+                f: result.files_searched,
+                ms: result.ms,
+              })
+            : t('{n} matches in {m} mods · {f} files · {ms} ms', {
+                n: result.hits.length,
+                m: groups.length,
+                f: result.files_searched,
+                ms: result.ms,
+              })}{result.truncated
+            ? ' · ' + t('stopped at the result limit, refine your search')
             : ''}
         {/if}
       </span>
-      <button onclick={onclose}>Close</button>
+      <button onclick={onclose}>{t('Close')}</button>
     </footer>
   </div>
 </div>

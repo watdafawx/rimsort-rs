@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { onMount } from 'svelte'
   import { openUrl } from '@tauri-apps/plugin-opener'
   import type { ToddsOptions } from '../bindings'
@@ -19,16 +20,23 @@
     if (o.preset === 'Clean') o.preset = 'Optimized' // "clean" has its own button
     await call(commands.setToddsOptions(o))
     onclose()
-    await runTodds(o, o.dry_run ? 'todds dry run finished' : 'Textures optimized')
+    await runTodds(o, o.dry_run ? t('todds dry run finished') : t('Textures optimized'))
   }
 
   async function clean() {
     if (!opts) return
     const o = { ...$state.snapshot(opts), preset: 'Clean' as const }
-    const scope = o.active_mods_target ? 'the active mods' : 'every mod folder'
-    if (!o.dry_run && !confirm(`Delete the .dds textures todds created for ${scope}?`)) return
+    if (
+      !o.dry_run &&
+      !confirm(
+        o.active_mods_target
+          ? t('Delete the .dds textures todds created for the active mods?')
+          : t('Delete the .dds textures todds created for every mod folder?'),
+      )
+    )
+      return
     onclose()
-    await runTodds(o, o.dry_run ? 'todds dry run finished' : 'Generated .dds files deleted')
+    await runTodds(o, o.dry_run ? t('todds dry run finished') : t('Generated .dds files deleted'))
   }
 </script>
 
@@ -37,22 +45,24 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Optimize textures"
+    aria-label={t('Optimize textures')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Optimize textures</h2>
+    <h2>{t('Optimize textures')}</h2>
     <p class="dim">
       <button class="link" onclick={() => openUrl('https://github.com/joseasoler/todds')}
         >todds</button
-      > converts mod PNG textures to DDS so RimWorld loads faster and uses less memory. It is downloaded
-      on first use.
+      >
+      {t(
+        'converts mod PNG textures to DDS so RimWorld loads faster and uses less memory. It is downloaded on first use.',
+      )}
     </p>
     {#if opts}
       <fieldset>
-        <legend>Target</legend>
+        <legend>{t('Target')}</legend>
         <label class="check">
           <input
             type="radio"
@@ -60,7 +70,7 @@
             checked={opts.active_mods_target}
             onchange={() => (opts!.active_mods_target = true)}
           />
-          Active mods ({app.active.length})
+          {t('Active mods ({n})', { n: app.active.length })}
         </label>
         <label class="check">
           <input
@@ -69,16 +79,16 @@
             checked={!opts.active_mods_target}
             onchange={() => (opts!.active_mods_target = false)}
           />
-          Every mod in the local and Workshop folders
+          {t('Every mod in the local and Workshop folders')}
         </label>
       </fieldset>
       <fieldset>
-        <legend>Options</legend>
+        <legend>{t('Options')}</legend>
         <div class="row">
-          <label for="todds-preset">Preset</label>
+          <label for="todds-preset">{t('Preset')}</label>
           <select id="todds-preset" bind:value={opts.preset}>
-            <option value="Optimized">Optimized (BC1 / BC7, recommended)</option>
-            <option value="Custom">Custom arguments</option>
+            <option value="Optimized">{t('Optimized (BC1 / BC7, recommended)')}</option>
+            <option value="Custom">{t('Custom arguments')}</option>
           </select>
         </div>
         {#if opts.preset === 'Custom'}
@@ -90,23 +100,26 @@
           />
         {/if}
         <label class="check">
-          <input type="checkbox" bind:checked={opts.overwrite} /> Re-encode textures that already have
-          a DDS
+          <input type="checkbox" bind:checked={opts.overwrite} />
+          {t('Re-encode textures that already have a DDS')}
         </label>
         <label class="check">
-          <input type="checkbox" bind:checked={opts.auto_before_launch} /> Optimize automatically before
-          launching the game
+          <input type="checkbox" bind:checked={opts.auto_before_launch} />
+          {t('Optimize automatically before launching the game')}
         </label>
         <label class="check">
-          <input type="checkbox" bind:checked={opts.dry_run} /> Dry run (only list what would change)
+          <input type="checkbox" bind:checked={opts.dry_run} />
+          {t('Dry run (only list what would change)')}
         </label>
       </fieldset>
     {/if}
     <footer>
-      <button onclick={onclose}>Close</button>
-      <button onclick={clean} disabled={!opts || !!app.jobTask}>Delete generated .dds…</button>
+      <button onclick={onclose}>{t('Close')}</button>
+      <button onclick={clean} disabled={!opts || !!app.jobTask}
+        >{t('Delete generated .dds…')}</button
+      >
       <button class="primary" onclick={optimize} disabled={!opts || !!app.jobTask}>
-        {opts?.dry_run ? 'Dry run' : 'Optimize'}
+        {opts?.dry_run ? t('Dry run') : t('Optimize')}
       </button>
     </footer>
   </div>

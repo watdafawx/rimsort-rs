@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { onMount } from 'svelte'
   import type { ModDetail } from '../bindings'
   import { call, commands, toast } from './ipc.svelte'
@@ -47,7 +48,7 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Color, tags and notes"
+    aria-label={t('Color, tags and notes')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
@@ -56,7 +57,7 @@
     {#if detail}
       <h2>{detail.name}</h2>
       <div class="field">
-        <span class="lbl">Color</span>
+        <span class="lbl">{t('Color')}</span>
         <div class="swatches">
           {#each PALETTE as c (c)}
             <button
@@ -71,22 +72,22 @@
             type="color"
             value={color ?? '#888888'}
             oninput={(e) => (color = e.currentTarget.value)}
-            aria-label="Custom color"
+            aria-label={t('Custom color')}
           />
-          <button onclick={() => (color = null)} disabled={!color}>Clear</button>
+          <button onclick={() => (color = null)} disabled={!color}>{t('Clear')}</button>
         </div>
       </div>
       <div class="field">
-        <label class="lbl" for="tags">Tags (comma separated)</label>
+        <label class="lbl" for="tags">{t('Tags (comma separated)')}</label>
         <input id="tags" bind:value={tags} placeholder="qol, combat, visuals" />
       </div>
       <div class="field">
-        <label class="lbl" for="note">Notes</label>
+        <label class="lbl" for="note">{t('Notes')}</label>
         <textarea id="note" rows="5" bind:value={note}></textarea>
       </div>
       <footer>
-        <button onclick={onclose}>Cancel</button>
-        <button class="primary" onclick={save}>Save</button>
+        <button onclick={onclose}>{t('Cancel')}</button>
+        <button class="primary" onclick={save}>{t('Save')}</button>
       </footer>
     {/if}
   </div>
