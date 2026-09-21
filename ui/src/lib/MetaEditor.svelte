@@ -91,27 +91,10 @@
 </div>
 
 <style>
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: grid;
-    place-items: center;
-    z-index: 10;
-  }
   .dialog {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
     width: min(520px, 92vw);
-    display: grid;
-    gap: 0.7rem;
   }
-  h2 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
+
   .field {
     display: grid;
     gap: 0.3rem;
@@ -149,10 +132,5 @@
     border-radius: 5px;
     padding: 0.4rem;
     resize: vertical;
-  }
-  footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
   }
 </style>

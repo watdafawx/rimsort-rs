@@ -994,25 +994,9 @@
   }
 
   /* Sort-cycle dialog */
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 8, 14, 0.6);
-    backdrop-filter: blur(2px);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-    animation: fade 0.12s ease-out;
-  }
+
   .dialog {
-    background: var(--panel);
-    border: 1px solid var(--line-strong);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 1.1rem 1.3rem;
     max-width: 80vw;
-    max-height: 80vh;
-    overflow: auto;
   }
   .dialog h2 {
     margin-bottom: 0.4rem;

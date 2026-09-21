@@ -279,3 +279,61 @@ kbd {
     opacity: 1;
   }
 }
+
+/* ── Dialogs (shared by every modal) ───────────────────────────────────── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 8, 14, 0.6);
+  backdrop-filter: blur(2px);
+  animation: fade 0.12s ease-out;
+}
+.dialog {
+  display: grid;
+  gap: 0.7rem;
+  align-content: start;
+  width: min(560px, 92vw);
+  max-width: 92vw;
+  max-height: 86vh;
+  overflow: auto;
+  padding: 1.15rem 1.35rem;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  animation: pop 0.14s ease-out;
+}
+.dialog h2 {
+  font-size: 1.1rem;
+}
+.dialog p {
+  margin: 0;
+}
+.dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+.dialog .dim {
+  color: var(--dim);
+  font-size: 0.88em;
+}
+.dialog ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

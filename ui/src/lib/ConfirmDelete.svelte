@@ -34,27 +34,10 @@
 </div>
 
 <style>
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
   .dialog {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
     width: min(560px, 92vw);
-    display: grid;
-    gap: 0.5rem;
   }
-  h2 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
+
   p {
     margin: 0;
   }
@@ -67,12 +50,7 @@
     color: #ecc94b;
     font-size: 0.9rem;
   }
-  footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 0.4rem;
-  }
+
   .danger {
     background: #c53030;
     border-color: #c53030;

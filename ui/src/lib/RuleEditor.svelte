@@ -130,29 +130,10 @@
 </div>
 
 <style>
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: grid;
-    place-items: center;
-    z-index: 10;
-  }
   .dialog {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
     width: min(720px, 92vw);
-    max-height: 85vh;
-    overflow: auto;
-    display: grid;
-    gap: 0.6rem;
   }
-  h2 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
+
   h3 {
     margin: 0.2rem 0;
     font-size: 0.9rem;
@@ -208,10 +189,5 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
-  }
-  footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
   }
 </style>

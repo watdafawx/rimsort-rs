@@ -1,7 +1,9 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog'
   import type { DbResult, InstanceDto } from '../bindings'
+  import { i18n, LANGS, setLanguage } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
+  import { setTheme, theme, type ThemeMode } from './theme.svelte'
   import { app, loadSettings, refresh } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
@@ -11,6 +13,13 @@
   let draft = $state<InstanceDto>({ ...current() })
   let notes = $state<string[]>([])
   let newName = $state('')
+  const TABS = [
+    ['locations', 'Locations'],
+    ['sorting', 'Sorting'],
+    ['appearance', 'Appearance'],
+    ['databases', 'Databases'],
+  ] as const
+  let tab = $state<(typeof TABS)[number][0]>('locations')
   let dbResults = $state<DbResult[]>([])
   let dbBusy = $state(false)
 
@@ -88,94 +97,138 @@
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Settings — Locations</h2>
-
-    <div class="row">
-      <label for="inst">Instance</label>
-      <select
-        id="inst"
-        value={app.settings!.current_instance}
-        onchange={(e) => switchTo(e.currentTarget.value)}
-      >
-        {#each app.settings!.instances as i (i.name)}<option>{i.name}</option>{/each}
-      </select>
-      <button onclick={remove} disabled={app.settings!.instances.length < 2}>Delete</button>
-      <input placeholder="New instance name" bind:value={newName} />
-      <button onclick={create} disabled={!newName.trim()}>Create</button>
+    <h2>Settings</h2>
+    <div class="tabs" role="tablist">
+      {#each TABS as [id, label] (id)}
+        <button
+          role="tab"
+          aria-selected={tab === id}
+          class:on={tab === id}
+          onclick={() => (tab = id)}
+        >
+          {label}
+        </button>
+      {/each}
     </div>
 
-    {#each FIELDS as [key, label] (key)}
-      {@const check = app.settings!.checks.find((c) => c.kind === key.replace('_folder', ''))}
-      <div class="field">
-        <label for={key}>{label}</label>
-        <div class="row">
-          <input id={key} bind:value={draft[key]} spellcheck="false" />
-          <button onclick={() => browse(key)}>Browse…</button>
-        </div>
-        {#if check && !check.ok && check.path === draft[key]}<small class="bad"
-            >{check.reason}</small
-          >{/if}
-      </div>
-    {/each}
-
-    <div class="field">
-      <label for="run_args">Game launch arguments</label>
-      <input
-        id="run_args"
-        bind:value={draft.run_args}
-        spellcheck="false"
-        placeholder="-popupwindow"
-      />
-      <label class="check"
-        ><input type="checkbox" bind:checked={draft.launch_via_steam} /> Launch through Steam (arguments
-        are ignored)</label
-      >
-    </div>
-
-    <fieldset>
-      <legend>Sorting &amp; validation</legend>
-      <label class="check"
-        ><input type="checkbox" bind:checked={opts.dependencies_as_load_after} /> Treat declared dependencies
-        as “load after” when sorting</label
-      >
-      <label class="check"
-        ><input type="checkbox" bind:checked={opts.use_alternative_ids} /> Alternative package ids satisfy
-        a dependency</label
-      >
-      <label class="check"
-        ><input type="checkbox" bind:checked={opts.prefer_versioned} /> Prefer version-specific About.xml
-        entries (needs rescan)</label
-      >
-    </fieldset>
-
-    <fieldset>
-      <legend>Rule databases</legend>
+    {#if tab === 'locations'}
       <div class="row">
-        <button onclick={updateDbs} disabled={dbBusy}
-          >{dbBusy ? 'Updating…' : 'Update databases'}</button
+        <label for="inst">Instance</label>
+        <select
+          id="inst"
+          value={app.settings!.current_instance}
+          onchange={(e) => switchTo(e.currentTarget.value)}
         >
-        <span class="dim"
-          >Community rules, Use This Instead, No Version Warning. Applied on the next rescan.</span
-        >
+          {#each app.settings!.instances as i (i.name)}<option>{i.name}</option>{/each}
+        </select>
+        <button onclick={remove} disabled={app.settings!.instances.length < 2}>Delete</button>
+        <input placeholder="New instance name" bind:value={newName} />
+        <button onclick={create} disabled={!newName.trim()}>Create</button>
       </div>
-      {#each dbResults as r (r.name)}
-        <div class="dbrow" class:bad={r.status === 'Failed'}>
-          <strong>{r.name}</strong>
-          <span
-            >{r.status === 'Updated'
-              ? 'updated'
-              : r.status === 'NotModified'
-                ? 'already up to date'
-                : 'failed'} — {r.detail}</span
-          >
+
+      {#each FIELDS as [key, label] (key)}
+        {@const check = app.settings!.checks.find((c) => c.kind === key.replace('_folder', ''))}
+        <div class="field">
+          <label for={key}>{label}</label>
+          <div class="row">
+            <input id={key} bind:value={draft[key]} spellcheck="false" />
+            <button onclick={() => browse(key)}>Browse…</button>
+          </div>
+          {#if check && !check.ok && check.path === draft[key]}<small class="bad"
+              >{check.reason}</small
+            >{/if}
         </div>
       {/each}
-    </fieldset>
 
-    <div class="row">
-      <button onclick={detect}>Auto-detect</button>
-      <span class="dim">{notes.join(' · ')}</span>
-    </div>
+      <div class="field">
+        <label for="run_args">Game launch arguments</label>
+        <input
+          id="run_args"
+          bind:value={draft.run_args}
+          spellcheck="false"
+          placeholder="-popupwindow"
+        />
+        <label class="check"
+          ><input type="checkbox" bind:checked={draft.launch_via_steam} /> Launch through Steam (arguments
+          are ignored)</label
+        >
+      </div>
+
+      <div class="row">
+        <button onclick={detect}>Auto-detect</button>
+        <span class="dim">{notes.join(' · ')}</span>
+      </div>
+    {/if}
+
+    {#if tab === 'sorting'}
+      <fieldset>
+        <legend>Sorting &amp; validation</legend>
+        <label class="check"
+          ><input type="checkbox" bind:checked={opts.dependencies_as_load_after} /> Treat declared dependencies
+          as “load after” when sorting</label
+        >
+        <label class="check"
+          ><input type="checkbox" bind:checked={opts.use_alternative_ids} /> Alternative package ids satisfy
+          a dependency</label
+        >
+        <label class="check"
+          ><input type="checkbox" bind:checked={opts.prefer_versioned} /> Prefer version-specific About.xml
+          entries (needs rescan)</label
+        >
+      </fieldset>
+    {/if}
+
+    {#if tab === 'appearance'}
+      <fieldset>
+        <legend>Appearance</legend>
+        <div class="row">
+          <label for="theme-select">Theme</label>
+          <select
+            id="theme-select"
+            value={theme.mode}
+            onchange={(e) => setTheme(e.currentTarget.value as ThemeMode)}
+          >
+            <option value="auto">Match system</option>
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+          <label for="lang-select">Language</label>
+          <select
+            id="lang-select"
+            value={i18n.lang}
+            onchange={(e) => setLanguage(e.currentTarget.value)}
+          >
+            {#each LANGS as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
+          </select>
+        </div>
+      </fieldset>
+    {/if}
+
+    {#if tab === 'databases'}
+      <fieldset>
+        <legend>Rule databases</legend>
+        <div class="row">
+          <button onclick={updateDbs} disabled={dbBusy}
+            >{dbBusy ? 'Updating…' : 'Update databases'}</button
+          >
+          <span class="dim"
+            >Community rules, Use This Instead, No Version Warning. Applied on the next rescan.</span
+          >
+        </div>
+        {#each dbResults as r (r.name)}
+          <div class="dbrow" class:bad={r.status === 'Failed'}>
+            <strong>{r.name}</strong>
+            <span
+              >{r.status === 'Updated'
+                ? 'updated'
+                : r.status === 'NotModified'
+                  ? 'already up to date'
+                  : 'failed'} — {r.detail}</span
+            >
+          </div>
+        {/each}
+      </fieldset>
+    {/if}
 
     <footer>
       <button onclick={onclose}>Cancel</button>
@@ -185,27 +238,36 @@
 </div>
 
 <style>
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: grid;
-    place-items: center;
-    z-index: 10;
+  .tabs {
+    display: flex;
+    gap: 0.15rem;
+    border-bottom: 1px solid var(--line);
+    margin: 0 -0.25rem;
+  }
+  .tabs button {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: var(--dim);
+    padding: 0.4rem 0.85rem;
+  }
+  .tabs button:hover:not(:disabled) {
+    background: var(--hover);
+    color: var(--fg);
+  }
+  .tabs button.on {
+    color: var(--fg);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
   }
   .dialog {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
+    min-height: 26rem;
+  }
+  .dialog {
     width: min(720px, 92vw);
-    display: grid;
-    gap: 0.75rem;
   }
-  h2 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
+
   .row {
     display: flex;
     gap: 0.5rem;
@@ -247,10 +309,5 @@
   .dim {
     color: var(--dim);
     font-size: 0.85em;
-  }
-  footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
   }
 </style>
