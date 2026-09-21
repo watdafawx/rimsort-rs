@@ -42,6 +42,7 @@
     onhover,
     onhoverend,
     focus = null,
+    onbulk,
     onlyWarn = $bindable(false),
     onmove,
     onactivate,
@@ -60,6 +61,8 @@
     onhoverend?: () => void
     /** Ask the list to scroll to and select a mod (command palette). `n` changes on every request. */
     focus?: { id: string; n: number } | null
+    /** Colour / tag every selected mod (multi-select bar). */
+    onbulk?: (ids: string[], patch: { color?: string | null; addTag?: string }) => void
     /** Warnings-only filter; bindable so the status chips can switch it on. */
     onlyWarn?: boolean
     /** Rows dropped on this list; `beforeId` is the row they were dropped above (null = end). */
@@ -161,6 +164,24 @@
     }
     cursor = i
     onselect(shown[i])
+  }
+
+  const PALETTE = [
+    '#e53e3e',
+    '#ed8936',
+    '#ecc94b',
+    '#48bb78',
+    '#38b2ac',
+    '#4299e1',
+    '#9f7aea',
+    '#ed64a6',
+  ]
+  let bulkTag = $state('')
+  function addBulkTag() {
+    const tag = bulkTag.trim()
+    if (!tag) return
+    onbulk?.(selectedIds(), { addTag: tag })
+    bulkTag = ''
   }
 
   let lastFocus = 0
@@ -395,9 +416,76 @@
     </div>
     {#if !rows.length}<p class="empty">{t('Nothing here.')}</p>{/if}
   </div>
+  {#if sel.size > 1}
+    <div class="bulk" role="toolbar" aria-label={t('Selected mods')}>
+      <strong>{t('{n} selected', { n: sel.size })}</strong>
+      <button onclick={() => onactivate(selectedIds())}
+        >{listId === 'active' ? t('Disable') : t('Enable')}</button
+      >
+      <span class="sw">
+        {#each PALETTE as c (c)}
+          <button
+            class="dot"
+            style:background={c}
+            aria-label={c}
+            onclick={() => onbulk?.(selectedIds(), { color: c })}
+          ></button>
+        {/each}
+        <button
+          class="dot none"
+          aria-label={t('No color')}
+          title={t('No color')}
+          onclick={() => onbulk?.(selectedIds(), { color: null })}
+        ></button>
+      </span>
+      <input
+        class="tagin"
+        placeholder={t('Add tag…')}
+        aria-label={t('Add tag…')}
+        bind:value={bulkTag}
+        onkeydown={(e) => e.key === 'Enter' && addBulkTag()}
+      />
+      <span class="grow"></span>
+      <button class="ghost icon" aria-label={t('Clear selection')} onclick={() => (sel = new Set())}
+        ><Icon name="close" size={14} /></button
+      >
+    </div>
+  {/if}
 </section>
 
 <style>
+  .bulk {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-top: 1px solid var(--line-strong);
+    background: var(--panel-2);
+    flex-wrap: wrap;
+    animation: rise 0.14s ease-out;
+  }
+  .sw {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .dot {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+  }
+  .dot:hover:not(:disabled) {
+    border-color: var(--fg);
+  }
+  .tagin {
+    width: 6.5rem;
+  }
+  .dot.none {
+    background: transparent;
+    border: 2px dashed var(--line-strong);
+  }
   .ico {
     flex: none;
     object-fit: contain;

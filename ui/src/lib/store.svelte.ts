@@ -299,6 +299,23 @@ export async function downloadMods(ids: string[]) {
   )
 }
 
+export type BulkMeta = { color?: string | null; addTag?: string }
+
+/** Apply a colour and/or an extra tag to many mods at once, keeping each mod's own notes and other tags. */
+export async function bulkMeta(ids: string[], patch: BulkMeta) {
+  let done = 0
+  for (const id of ids) {
+    const d = await call(commands.getMod(id))
+    if (!d) continue
+    const tags = patch.addTag && !d.tags.includes(patch.addTag) ? [...d.tags, patch.addTag] : d.tags
+    const color = 'color' in patch ? (patch.color ?? null) : d.color
+    await call(commands.setModMeta(id, { color, tags, note: d.note }))
+    patchRow(id, { color, tags })
+    done++
+  }
+  toast(t('Updated {n} mods', { n: done }), 2500)
+}
+
 /** Subscribe to / unsubscribe from Workshop items in the Steam client (Steam downloads or removes them itself). */
 export async function steamSubscribe(ids: string[], subscribe: boolean) {
   const results = await call(commands.steamSetSubscribed(ids, subscribe))

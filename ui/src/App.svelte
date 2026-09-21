@@ -56,6 +56,7 @@
     deleteMod,
     downloadMods,
     runTodds,
+    bulkMeta,
     steamSubscribe,
     describe,
     isError,
@@ -862,6 +863,7 @@
       title={t('Inactive')}
       listId="inactive"
       rows={app.inactive}
+      onbulk={bulkMeta}
       {saveIds}
       focus={focusReq}
       onhover={(row, rect) => (hover = { row, rect, list: 'inactive' })}
@@ -883,6 +885,7 @@
       rows={app.active}
       warnings={app.warnings}
       bind:onlyWarn={activeWarnOnly}
+      onbulk={bulkMeta}
       {saveIds}
       focus={focusReq}
       onhover={(row, rect) => (hover = { row, rect, list: 'active' })}
