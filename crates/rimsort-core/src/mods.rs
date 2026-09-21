@@ -595,6 +595,20 @@ mod tests {
     }
 
     #[test]
+    fn about_xml_fuzz_never_panics() {
+        use crate::fuzz::{ABOUT, Rng, mutate};
+        let t = tempfile::tempdir().unwrap();
+        let mut rng = Rng(0xABCDEF);
+        for i in 0..400 {
+            let p = t.path().join(format!("m{i}"));
+            fs::create_dir_all(p.join("About")).unwrap();
+            fs::write(p.join("About/About.xml"), mutate(&mut rng, ABOUT)).unwrap();
+            let m = parse_mod(&p, Source::Workshop, &cfg("1.6.4871 rev590"));
+            assert!(m.valid || m.invalid_reason.is_some()); // always a definite outcome
+        }
+    }
+
+    #[test]
     fn workshop_pfid_from_folder() {
         let t = tempfile::tempdir().unwrap();
         let p = write_mod(

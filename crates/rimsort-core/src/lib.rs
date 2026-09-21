@@ -3,6 +3,8 @@
 pub mod dbupdate;
 pub mod dto;
 mod error;
+#[cfg(test)]
+mod fuzz;
 pub mod gitmods;
 pub mod launch;
 pub mod logs;

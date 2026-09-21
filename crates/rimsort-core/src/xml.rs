@@ -123,6 +123,9 @@ fn unescape(s: &str, out: &mut String) {
     out.push_str(rest);
 }
 
+/// Elements nested deeper than this are ignored (real About.xml files nest ~5 levels).
+const MAX_DEPTH: usize = 128;
+
 /// Parse to a tree. Returns a synthetic root whose children are the top-level elements.
 pub fn parse(src: &str) -> Node {
     let mut stack = vec![Node::new("#root")];
@@ -187,9 +190,9 @@ pub fn parse(src: &str) -> Node {
             node.attrs = attr_names(&rest[name_end..j]);
             if self_closing {
                 stack.last_mut().unwrap().children.push(node);
-            } else {
+            } else if stack.len() <= MAX_DEPTH {
                 stack.push(node);
-            }
+            } // else: deeper than any real mod file; drop the tag (keeps recursion in write/drop bounded)
             i += j + 1;
         } else {
             // Bare `<` in text.
