@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { onMount } from 'svelte'
   import type { BackupInfo } from '../bindings'
   import { call, commands } from './ipc.svelte'
@@ -25,31 +26,32 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Restore from backup"
+    aria-label={t('Restore from backup')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Restore from backup</h2>
+    <h2>{t('Restore from backup')}</h2>
     <p class="dim">
-      Every Save keeps the previous <code>ModsConfig.xml</code> (last 20). Loading one replaces the active
-      list; press Save to write it.
+      {t(
+        'Every Save keeps the previous ModsConfig.xml (last 20). Loading one replaces the active list; press Save to write it.',
+      )}
     </p>
     {#if loaded && !backups.length}
-      <p>No backups yet.</p>
+      <p>{t('No backups yet.')}</p>
     {:else}
       <ul>
         {#each backups as b (b.path)}
           <li>
             <span>{new Date(b.unix * 1000).toLocaleString()}</span>
-            <span class="dim">{b.count} active mods</span>
-            <button onclick={() => restore(b)}>Load</button>
+            <span class="dim">{t('{n} active mods', { n: b.count })}</span>
+            <button onclick={() => restore(b)}>{t('Load')}</button>
           </li>
         {/each}
       </ul>
     {/if}
-    <footer><button onclick={onclose}>Close</button></footer>
+    <footer><button onclick={onclose}>{t('Close')}</button></footer>
   </div>
 </div>
 

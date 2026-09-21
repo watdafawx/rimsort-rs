@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { app, cloneGitMods, downloadMods } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
@@ -30,16 +31,17 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Download mods"
+    aria-label={t('Download mods')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Download mods</h2>
+    <h2>{t('Download mods')}</h2>
     <p class="dim">
-      Paste Steam Workshop links/ids (fetched with SteamCMD) and/or GitHub repository links (cloned
-      with git), one per line. Everything lands in your local mods folder.
+      {t(
+        'Paste Steam Workshop links/ids (fetched with SteamCMD) and/or GitHub repository links (cloned with git), one per line. Everything lands in your local mods folder.',
+      )}
     </p>
     <textarea
       rows="5"
@@ -47,19 +49,16 @@
       placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077&#10;https://github.com/Zetrith/Prepatcher"
     ></textarea>
     <div class="dim summary">
-      {ids.length} Workshop item{ids.length === 1 ? '' : 's'} · {repos.length} GitHub repositor{repos.length ===
-      1
-        ? 'y'
-        : 'ies'}
+      {t('Workshop items: {w} · GitHub repositories: {g}', { w: ids.length, g: repos.length })}
     </div>
     <footer>
-      <button onclick={onclose}>Cancel</button>
+      <button onclick={onclose}>{t('Cancel')}</button>
       <button
         class="primary"
         disabled={(!ids.length && !repos.length) || !!app.jobTask}
         onclick={go}
       >
-        Download
+        {t('Download')}
       </button>
     </footer>
   </div>

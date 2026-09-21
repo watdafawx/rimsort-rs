@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import { openUrl } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { MissingDep } from '../bindings'
@@ -23,18 +24,18 @@
     if (!d.installed) return
     await enable([d.installed])
     await load()
-    toast('Enabled — use Sort to place it correctly', 3000)
+    toast(t('Enabled — use Sort to place it correctly'), 3000)
   }
 
   async function enableAll() {
     await enable(installable.map((d) => d.installed!))
     await load()
-    toast(`Enabled ${installable.length} mods — use Sort to place them correctly`, 3500)
+    toast(t('Enabled {n} mods — use Sort to place them correctly', { n: installable.length }), 3500)
   }
 
   const by = (d: MissingDep) =>
     d.required_by.slice(0, 3).join(', ') +
-    (d.required_by.length > 3 ? ` +${d.required_by.length - 3} more` : '')
+    (d.required_by.length > 3 ? ' ' + t('+{n} more', { n: d.required_by.length - 3 }) : '')
 </script>
 
 <div class="backdrop" role="presentation" onclick={onclose}>
@@ -42,18 +43,20 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Missing dependencies"
+    aria-label={t('Missing dependencies')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Missing dependencies</h2>
+    <h2>{t('Missing dependencies')}</h2>
     {#if !deps.length}
-      <p class="dim">Nothing missing. 🎉</p>
+      <p class="dim">{t('Nothing missing. 🎉')}</p>
     {:else}
       <p class="dim">
-        {deps.length} required mod{deps.length === 1 ? ' is' : 's are'} not in your active list.
+        {deps.length === 1
+          ? t('{n} required mod is not in your active list.', { n: 1 })
+          : t('{n} required mods are not in your active list.', { n: deps.length })}
       </p>
       <ul>
         {#each deps as d (d.package_id)}
@@ -61,16 +64,16 @@
             <div class="what">
               <strong>{d.name}</strong>
               <span class="dim">{d.package_id}</span>
-              <div class="dim">Required by {by(d)}</div>
+              <div class="dim">{t('Required by {names}', { names: by(d) })}</div>
             </div>
             <div class="acts">
               {#if d.installed}
-                <button class="primary" onclick={() => enableOne(d)}>Enable</button>
+                <button class="primary" onclick={() => enableOne(d)}>{t('Enable')}</button>
               {:else}
                 <button
                   disabled={!d.workshop_id || !!app.jobTask}
-                  title="Download with SteamCMD into your local mods folder"
-                  onclick={() => downloadMods([d.workshop_id!])}>Download</button
+                  title={t('Download with SteamCMD into your local mods folder')}
+                  onclick={() => downloadMods([d.workshop_id!])}>{t('Download')}</button
                 >
               {/if}
               <button
@@ -80,7 +83,7 @@
                     `https://steamcommunity.com/sharedfiles/filedetails/?id=${d.workshop_id}`,
                   )}
               >
-                Workshop
+                {t('Workshop')}
               </button>
             </div>
           </li>
@@ -89,9 +92,9 @@
     {/if}
     <footer>
       {#if installable.length > 1}<button onclick={enableAll}
-          >Enable all installed ({installable.length})</button
+          >{t('Enable all installed ({n})', { n: installable.length })}</button
         >{/if}
-      <button onclick={onclose}>Close</button>
+      <button onclick={onclose}>{t('Close')}</button>
     </footer>
   </div>
 </div>

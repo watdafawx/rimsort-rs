@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
+  import { t } from './i18n.svelte'
   import type { ModDetail } from '../bindings'
 
   let { mod, onconfirm, onclose }: { mod: ModDetail; onconfirm: () => void; onclose: () => void } =
@@ -13,24 +14,25 @@
     class="dialog"
     role="alertdialog"
     aria-modal="true"
-    aria-label="Delete mod"
+    aria-label={t('Delete mod')}
     tabindex="-1"
     use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Delete “{mod.name}”?</h2>
-    <p>This moves the mod's folder to the Recycle Bin:</p>
+    <h2>{t('Delete “{name}”?', { name: mod.name })}</h2>
+    <p>{t('This moves the mod’s folder to the Recycle Bin:')}</p>
     <p class="path">{mod.path}</p>
     {#if workshop}
       <p class="warn">
-        This is a Steam Workshop mod. While you stay subscribed, Steam may download it again —
-        unsubscribe in Steam to remove it for good.
+        {t(
+          'This is a Steam Workshop mod. While you stay subscribed, Steam may download it again — unsubscribe in Steam to remove it for good.',
+        )}
       </p>
     {/if}
     <footer>
-      <button onclick={onclose}>Cancel</button>
-      <button class="danger" onclick={onconfirm}>Move to Recycle Bin</button>
+      <button onclick={onclose}>{t('Cancel')}</button>
+      <button class="danger" onclick={onconfirm}>{t('Move to Recycle Bin')}</button>
     </footer>
   </div>
 </div>
