@@ -274,9 +274,20 @@ fn mod_type(source: Source, path: &Path, folder: &str) -> ModType {
 }
 
 /// `Assemblies/*.dll` in the mod folder or any immediate subfolder (version folders such as `1.6/`).
+/// One `read_dir` per candidate, and the big content folders are skipped: this runs for every mod on
+/// every scan.
 fn has_assemblies(root: &Path) -> bool {
+    const CONTENT: [&str; 7] = [
+        "about",
+        "defs",
+        "textures",
+        "languages",
+        "sounds",
+        "patches",
+        "source",
+    ];
     let dll_in = |dir: &Path| {
-        fs::read_dir(dir).is_ok_and(|rd| {
+        fs::read_dir(dir.join("Assemblies")).is_ok_and(|rd| {
             rd.flatten().any(|e| {
                 e.path()
                     .extension()
@@ -284,25 +295,17 @@ fn has_assemblies(root: &Path) -> bool {
             })
         })
     };
-    let assemblies = |dir: &Path| {
-        fs::read_dir(dir).ok().and_then(|rd| {
+    dll_in(root)
+        || fs::read_dir(root).is_ok_and(|rd| {
             rd.flatten()
-                .find(|e| {
-                    e.file_name()
-                        .to_string_lossy()
-                        .eq_ignore_ascii_case("Assemblies")
+                .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+                .filter(|e| {
+                    !CONTENT
+                        .iter()
+                        .any(|c| e.file_name().to_string_lossy().eq_ignore_ascii_case(c))
                 })
-                .map(|e| e.path())
+                .any(|e| dll_in(&e.path()))
         })
-    };
-    if assemblies(root).is_some_and(|a| dll_in(&a)) {
-        return true;
-    }
-    fs::read_dir(root).is_ok_and(|rd| {
-        rd.flatten()
-            .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
-            .any(|e| assemblies(&e.path()).is_some_and(|a| dll_in(&a)))
-    })
 }
 
 /// Parse one mod directory. Never fails: bad mods come back `valid == false` with a reason.
