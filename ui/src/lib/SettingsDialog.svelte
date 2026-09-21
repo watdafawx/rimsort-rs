@@ -40,6 +40,7 @@
   const SHORTCUTS: [string, string][] = [
     ['Ctrl + S', 'Save ModsConfig.xml'],
     ['Ctrl + Z / Ctrl + Y', 'Undo / redo list changes'],
+    ['Ctrl + K', 'Command palette: jump to any mod or run any action'],
     ['Ctrl + Shift + F', 'Search in mod files'],
     ['Ctrl + + / − / 0', 'Interface size'],
     ['Enter / Delete', 'Move the selected mods to the other list'],

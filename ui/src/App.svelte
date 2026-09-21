@@ -27,6 +27,9 @@
   import ToddsDialog from './lib/ToddsDialog.svelte'
   import { richText } from './lib/richtext'
   import { prefs } from './lib/prefs.svelte'
+  import { tip } from './lib/tip'
+  import HoverCard from './lib/HoverCard.svelte'
+  import CommandPalette, { type PaletteAction } from './lib/CommandPalette.svelte'
   import newIcon from './assets/mod/new.png'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
@@ -57,6 +60,8 @@
     undo,
   } from './lib/store.svelte'
 
+  /** Row the pointer is resting on (rich hover card). */
+  let hover = $state<{ row: ModRow; rect: DOMRect; list: 'active' | 'inactive' } | null>(null)
   let showSettings = $state(false)
   let detail = $state<ModDetail | null>(null)
   const FOLDERS: [FolderKind, string][] = [
@@ -80,6 +85,8 @@
   let showDups = $state(false)
   let showDownload = $state(false)
   let showSearch = $state(false)
+  let showPalette = $state(false)
+  let focusReq = $state<{ id: string; n: number } | null>(null)
   let showTodds = $state(false)
   let showBackups = $state(false)
   let deleting = $state<ModDetail | null>(null)
@@ -328,6 +335,30 @@
     await call(commands.launchGame())
   }
 
+  const paletteActions = $derived<PaletteAction[]>([
+    { label: t('Rescan mods'), keys: 'F5', run: doRefresh },
+    { label: t('Sort active list'), run: sort },
+    { label: t('Save load order'), keys: 'Ctrl+S', run: () => void trySave() },
+    { label: t('Launch RimWorld'), run: () => void run() },
+    { label: t('Undo'), keys: 'Ctrl+Z', run: undo },
+    { label: t('Redo'), keys: 'Ctrl+Y', run: redo },
+    { label: t('Clear active list'), run: clearActive },
+    { label: t('Search in mod files…'), keys: 'Ctrl+Shift+F', run: () => (showSearch = true) },
+    { label: t('Missing dependencies'), run: () => (showDeps = true) },
+    { label: t('Duplicate mods'), run: () => (showDups = true) },
+    { label: t('Download mods…'), run: () => (showDownload = true) },
+    { label: t('Optimize textures…'), run: () => (showTodds = true) },
+    { label: t('Restore from backup…'), run: () => (showBackups = true) },
+    { label: t('Import list…'), run: doImport },
+    { label: t('Player.log'), run: () => (view = view === 'log' ? 'mods' : 'log') },
+    { label: t('Settings'), run: () => (showSettings = true) },
+  ])
+
+  function pickFromPalette(row: ModRow) {
+    view = 'mods'
+    focusReq = { id: row.id, n: (focusReq?.n ?? 0) + 1 }
+  }
+
   const scan = $derived(tasks[app.scanTask])
   /** Package ids of the latest save game (null = no save, so no "new" markers). */
   const saveIds = $derived(app.save ? new Set(app.save.package_ids) : null)
@@ -354,6 +385,11 @@
       menu = null
       listMenu = false
       foldersMenu = false
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault()
+      showPalette = !showPalette
+      return
     }
     if (e.ctrlKey || e.metaKey) {
       const dir = { '+': 1, '=': 1, '-': -1, _: -1, '0': 0 }[e.key]
@@ -386,7 +422,10 @@
       <select
         class="instance"
         aria-label="Instance"
-        title="Instance"
+        use:tip={{
+          title: T('Instance'),
+          text: T('Separate game folders, mod folders and settings. Add or edit them in Settings.'),
+        }}
         value={app.settings.current_instance}
         onchange={(e) => switchInstance(e.currentTarget.value)}
       >
@@ -395,10 +434,29 @@
     {/if}
     <span class="vsep"></span>
     <div class="group">
-      <button id="refresh" onclick={doRefresh} disabled={app.scanning} title="Rescan mods (F5)">
+      <button
+        id="refresh"
+        onclick={doRefresh}
+        disabled={app.scanning}
+        use:tip={{
+          title: T('Rescan mods'),
+          text: T('Reads every mod folder and ModsConfig.xml again.'),
+          keys: 'F5',
+        }}
+      >
         <Icon name="refresh" />{t('Refresh')}
       </button>
-      <button id="sort" onclick={sort} disabled={!app.loaded} title="Sort the active list">
+      <button
+        id="sort"
+        onclick={sort}
+        disabled={!app.loaded}
+        use:tip={{
+          title: T('Sort active list'),
+          text: T(
+            'Orders the active mods by their load-order rules (About.xml, community rules, your rules). Nothing is written until you press Save.',
+          ),
+        }}
+      >
         <Icon name="sort" />{t('Sort')}
       </button>
       <button
@@ -406,11 +464,23 @@
         class="primary"
         onclick={trySave}
         disabled={!app.loaded}
-        title="Write ModsConfig.xml (Ctrl+S)"
+        use:tip={{
+          title: T('Save load order'),
+          text: T('Writes ModsConfig.xml and keeps a timestamped backup of the previous file.'),
+          keys: 'Ctrl+S',
+        }}
       >
         <Icon name="save" />{t('Save')}
       </button>
-      <button id="run" onclick={run} disabled={!app.loaded} title="Launch RimWorld">
+      <button
+        id="run"
+        onclick={run}
+        disabled={!app.loaded}
+        use:tip={{
+          title: T('Launch RimWorld'),
+          text: T('Starts the game with the last saved load order. Unsaved changes are not used.'),
+        }}
+      >
         <Icon name="play" />{t('Run')}
       </button>
     </div>
@@ -467,7 +537,11 @@
         class="ghost icon"
         onclick={undo}
         disabled={!app.undoDepth}
-        title="Undo (Ctrl+Z)"
+        use:tip={{
+          title: T('Undo'),
+          text: T('Reverts the last change to the mod lists.'),
+          keys: 'Ctrl+Z',
+        }}
         aria-label="Undo"
       >
         <Icon name="undo" />
@@ -477,7 +551,11 @@
         class="ghost icon"
         onclick={redo}
         disabled={!app.redoDepth}
-        title="Redo (Ctrl+Y)"
+        use:tip={{
+          title: T('Redo'),
+          text: T('Re-applies the change you just undid.'),
+          keys: 'Ctrl+Y',
+        }}
         aria-label="Redo"
       >
         <Icon name="redo" />
@@ -487,7 +565,12 @@
         class="ghost"
         onclick={clearActive}
         disabled={!app.loaded}
-        title="Disable every mod except the base game and DLC"
+        use:tip={{
+          title: T('Clear active list'),
+          text: T(
+            'Disables every mod except the base game and official expansions. You can undo it.',
+          ),
+        }}
       >
         <Icon name="trash" />{t('Clear')}
       </button>
@@ -499,7 +582,12 @@
           id="deps"
           class="ghost attn"
           onclick={() => (showDeps = true)}
-          title="Required mods that are not active"
+          use:tip={{
+            title: T('Missing dependencies'),
+            text: T(
+              'Required mods that are not in your active list. Click to enable or download them.',
+            ),
+          }}
         >
           <Icon name="link" />{app.missingDeps} missing
         </button>
@@ -509,7 +597,10 @@
         class="ghost"
         class:active={view === 'log'}
         onclick={() => (view = view === 'log' ? 'mods' : 'log')}
-        title="Show RimWorld's Player.log"
+        use:tip={{
+          title: T('Player.log'),
+          text: T("RimWorld's log from its last run, with errors and warnings highlighted."),
+        }}
       >
         <Icon name="log" />Log
       </button>
@@ -544,8 +635,13 @@
       {/if}
     </div>
     {#if app.dirty}
-      <span class="dirty" title="Changes not yet written to ModsConfig.xml"
-        ><Icon name="dot" size={22} />{t('unsaved')}</span
+      <span
+        class="dirty"
+        use:tip={{
+          title: T('Unsaved changes'),
+          text: T('The lists differ from ModsConfig.xml. Press Save to write them.'),
+          keys: 'Ctrl+S',
+        }}><Icon name="dot" size={22} />{t('unsaved')}</span
       >
     {/if}
     <button id="settings" class="ghost" onclick={() => (showSettings = true)}>
@@ -707,6 +803,9 @@
       listId="inactive"
       rows={app.inactive}
       {saveIds}
+      focus={focusReq}
+      onhover={(row, rect) => (hover = { row, rect, list: 'inactive' })}
+      onhoverend={() => (hover = null)}
       onmove={dropInto('inactive')}
       onactivate={(ids) => enable(ids)}
       onselect={select}
@@ -724,12 +823,24 @@
       rows={app.active}
       warnings={app.warnings}
       {saveIds}
+      focus={focusReq}
+      onhover={(row, rect) => (hover = { row, rect, list: 'active' })}
+      onhoverend={() => (hover = null)}
       onmove={dropInto('active')}
       onactivate={(ids) => disable(ids)}
       onselect={select}
       oncontext={(r, ids, x, y) => openMenu('active', r, ids, x, y)}
     />
   </main>
+
+  {#if hover && !menu}
+    <HoverCard
+      row={hover.row}
+      rect={hover.rect}
+      listId={hover.list}
+      warnings={hover.list === 'active' ? app.warnings[hover.row.id] : []}
+    />
+  {/if}
 
   <footer class="status">
     {#if app.jobTask && tasks[app.jobTask]}
@@ -757,20 +868,43 @@
           inactive: app.inactive.length,
         })}</span
       >
-      {#if app.errorCount}<span class="chip err"
-          ><Icon name="error" size={13} />{t('{n} with errors', { n: app.errorCount })}</span
+      {#if app.errorCount}<span
+          class="chip err"
+          use:tip={{
+            title: T('Mods with errors'),
+            text: T(
+              'Missing required mods or incompatible mods in your active list. Hover a mod to see why.',
+            ),
+          }}><Icon name="error" size={13} />{t('{n} with errors', { n: app.errorCount })}</span
         >{/if}
-      {#if app.warningCount}<span class="chip warn"
-          ><Icon name="alert" size={13} />{t('{n} with warnings', { n: app.warningCount })}</span
+      {#if app.warningCount}<span
+          class="chip warn"
+          use:tip={{
+            title: T('Mods with warnings'),
+            text: T(
+              'Load-order problems, version mismatches or available replacements. Hover a mod for details.',
+            ),
+          }}><Icon name="alert" size={13} />{t('{n} with warnings', { n: app.warningCount })}</span
         >{/if}
       {#if saveIds && prefs.saveMarks && newCount}<span
           class="chip"
-          title={t('Active mods that are not in the latest save ({name})', {
-            name: app.save!.name,
-          })}
+          use:tip={{
+            title: T('New since your latest save'),
+            text: T(
+              'Active mods the newest save game was not made with. Adding mods to a running colony can break it.',
+            ),
+          }}
           ><img src={newIcon} alt="" width="16" height="16" />{t('{n} new', { n: newCount })}</span
         >{/if}
-      {#if app.duplicates}<button class="chip link" onclick={() => (showDups = true)}
+      {#if app.duplicates}<button
+          class="chip link"
+          use:tip={{
+            title: T('Duplicate package ids'),
+            text: T(
+              'Several installed mods share a package id, but RimWorld can only use one. Click to choose.',
+            ),
+          }}
+          onclick={() => (showDups = true)}
           >{t('{n} duplicate package ids', { n: app.duplicates })}</button
         >{/if}
       <span class="spacer"></span>
@@ -931,6 +1065,11 @@
   {#if showBackups}<Backups onclose={() => (showBackups = false)} />{/if}
 
   {#if showDownload}<DownloadDialog onclose={() => (showDownload = false)} />{/if}
+  {#if showPalette}<CommandPalette
+      actions={paletteActions}
+      onpickmod={pickFromPalette}
+      onclose={() => (showPalette = false)}
+    />{/if}
   {#if showSearch}<SearchDialog onclose={() => (showSearch = false)} />{/if}
   {#if showTodds}<ToddsDialog onclose={() => (showTodds = false)} />{/if}
 

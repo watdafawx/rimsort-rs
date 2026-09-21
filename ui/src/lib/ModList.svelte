@@ -7,7 +7,8 @@
   import type { ModRow, Warning } from '../bindings'
   import Icon from './Icon.svelte'
   import { t, T } from './i18n.svelte'
-  import { ago, prefs } from './prefs.svelte'
+  import { prefs } from './prefs.svelte'
+  import { tip } from './tip'
   import steamIcon from '../assets/mod/steam_icon.png'
   import ludeonIcon from '../assets/mod/ludeon_icon.png'
   import localIcon from '../assets/mod/local_icon.png'
@@ -16,9 +17,19 @@
   import csharpIcon from '../assets/mod/csharp.png'
   import xmlIcon from '../assets/mod/xml.png'
   import newIcon from '../assets/mod/new.png'
-  import { describe, inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
+  import { inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
   const ROW = 28
+  let hoverTimer: ReturnType<typeof setTimeout> | undefined
+  function hoverIn(r: ModRow, e: MouseEvent) {
+    clearTimeout(hoverTimer)
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    hoverTimer = setTimeout(() => onhover?.(r, rect), 450)
+  }
+  function hoverOut() {
+    clearTimeout(hoverTimer)
+    onhoverend?.()
+  }
   const isRecent = (r: ModRow) => r.modified > Date.now() / 1000 - prefs.recentDays * 86400
 
   let {
@@ -27,6 +38,9 @@
     rows,
     warnings = {},
     saveIds = null,
+    onhover,
+    onhoverend,
+    focus = null,
     onmove,
     onactivate,
     onselect,
@@ -39,6 +53,11 @@
     warnings?: Record<string, Warning[]>
     /** Package ids of the latest save game; null when there is none (no markers then). */
     saveIds?: Set<string> | null
+    /** Pointer rested on a row (hover card); `onhoverend` when it should go away. */
+    onhover?: (row: ModRow, rect: DOMRect) => void
+    onhoverend?: () => void
+    /** Ask the list to scroll to and select a mod (command palette). `n` changes on every request. */
+    focus?: { id: string; n: number } | null
     /** Rows dropped on this list; `beforeId` is the row they were dropped above (null = end). */
     onmove: (from: string, ids: string[], beforeId: string | null) => void
     /** Double-click / Enter / Delete on the selection. */
@@ -112,17 +131,6 @@
     return known ? 'insave' : null
   }
 
-  function rowTitle(r: ModRow): string {
-    const lines = [r.name, r.package_id]
-    if (r.tags.length) lines.push(`Tags: ${r.tags.join(', ')}`)
-    if (r.has_note) lines.push('(has a note)')
-    if (!r.valid) lines.push('', 'Invalid mod (no usable About.xml)')
-    const w = warnings[r.id]
-    if (w) lines.push('', ...w.map(describe))
-    else if (r.unsupported_version) lines.push('', 'Does not list support for this game version')
-    return lines.join('\n')
-  }
-
   function selectedIds(): string[] {
     return shown.filter((r) => sel.has(r.id)).map((r) => r.id)
   }
@@ -151,6 +159,25 @@
     cursor = i
     onselect(shown[i])
   }
+
+  let lastFocus = 0
+  $effect(() => {
+    const f = focus
+    if (!f || f.n === lastFocus) return
+    if (!rows.some((r) => r.id === f.id)) return
+    lastFocus = f.n
+    // A filter could hide the row; the palette asked for it explicitly, so clear them.
+    query = ''
+    typeFilter = ''
+    onlyWarn = false
+    const i = shown.findIndex((r) => r.id === f.id)
+    if (i < 0) return
+    pick(i, { shiftKey: false, ctrlKey: false, metaKey: false })
+    queueMicrotask(() => {
+      ensureVisible(i)
+      scroller.scrollTop = Math.max(0, i * ROW - viewH / 2 + ROW)
+    })
+  })
 
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -221,7 +248,10 @@
       <select
         class="compact"
         bind:value={typeFilter}
-        title={t('Filter by mod source')}
+        use:tip={{
+          title: T('Filter by mod source'),
+          text: T('Show only Ludeon, Steam Workshop, local, SteamCMD or git mods.'),
+        }}
         aria-label="Filter by type"
       >
         <option value="">{t('All')}</option>
@@ -230,7 +260,7 @@
       {#if listId === 'inactive'}
         <select
           class="compact"
-          title={t('Sort')}
+          use:tip={{ title: T('Sort'), text: T('How the inactive list is ordered.') }}
           aria-label="Sort by"
           value={inactiveSort.key}
           onchange={(e) => setInactiveSort(e.currentTarget.value as SortKey, inactiveSort.desc)}
@@ -242,7 +272,10 @@
         </select>
         <button
           class="dir ghost icon"
-          title={inactiveSort.desc ? 'Descending' : 'Ascending'}
+          use:tip={{
+            title: inactiveSort.desc ? T('Descending') : T('Ascending'),
+            text: T('Click to reverse the order.'),
+          }}
           aria-label="Toggle sort direction"
           onclick={() => setInactiveSort(inactiveSort.key, !inactiveSort.desc)}
           ><span class:flip={!inactiveSort.desc}><Icon name="sort" size={15} /></span></button
@@ -251,7 +284,10 @@
       <button
         class="ghost icon toggle"
         class:on={onlyWarn}
-        title={t('Show only mods with warnings')}
+        use:tip={{
+          title: T('Show only mods with warnings'),
+          text: T('Hides every mod that has no warning or error.'),
+        }}
         aria-label="Show only mods with warnings"
         aria-pressed={onlyWarn}
         onclick={() => (onlyWarn = !onlyWarn)}><Icon name="alert" size={15} /></button
@@ -270,7 +306,10 @@
     tabindex="0"
     bind:this={scroller}
     bind:clientHeight={viewH}
-    onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
+    onscroll={(e) => {
+      hoverOut()
+      scrollTop = e.currentTarget.scrollTop
+    }}
     {onkeydown}
     ondragover={dragover}
     ondragleave={() => (dropAt = null)}
@@ -290,17 +329,22 @@
           tabindex="-1"
           style:transform="translateY({i * ROW}px)"
           style:box-shadow={r.color ? `inset 4px 0 0 ${r.color}` : undefined}
-          title={rowTitle(r)}
+          onmouseenter={(e) => hoverIn(r, e)}
+          onmouseleave={hoverOut}
           draggable="true"
           onclick={(e) => pick(i, e)}
           ondblclick={() => onactivate(selectedIds())}
           oncontextmenu={(e) => {
             e.preventDefault()
+            hoverOut()
             if (!sel.has(r.id)) pick(i, { shiftKey: false, ctrlKey: false, metaKey: false })
             oncontext?.(r, selectedIds(), e.clientX, e.clientY)
           }}
           onkeydown={() => {}}
-          ondragstart={(e) => dragstart(e, i)}
+          ondragstart={(e) => {
+            hoverOut()
+            dragstart(e, i)
+          }}
           ondragend={() => {
             dragging = null
             dropAt = null
@@ -308,27 +352,18 @@
         >
           {#if prefs.sourceIcons}
             {@const src = SOURCE[r.mod_type] ?? SOURCE.Unknown}
-            <img class="ico" src={src.icon} alt="" width="18" height="18" title={t(src.label)} />
+            <img class="ico" src={src.icon} alt="" width="18" height="18" />
           {:else}
             <span class="tag {cls}">{tag}</span>
           {/if}
           {#if prefs.typeIcons}
-            <img
-              class="ico"
-              src={r.csharp ? csharpIcon : xmlIcon}
-              alt=""
-              width="18"
-              height="18"
-              title={r.csharp
-                ? t('Contains custom C# assemblies (custom code)')
-                : t('Contains custom content (textures / XML)')}
-            />
+            <img class="ico" src={r.csharp ? csharpIcon : xmlIcon} alt="" width="18" height="18" />
           {/if}
           <span class="name">{r.name}</span>
           <span class="author">{r.authors}</span>
           {#if prefs.sourceIcons && SOURCE[r.mod_type]?.extra}
-            {@const [xi, xt] = SOURCE[r.mod_type].extra!}
-            <img class="ico" src={xi} alt="" width="16" height="16" title={t(xt)} />
+            {@const [xi] = SOURCE[r.mod_type].extra!}
+            <img class="ico" src={xi} alt="" width="16" height="16" />
           {/if}
           {#if saveMark(r) === 'new'}<img
               class="ico new"
@@ -336,15 +371,13 @@
               alt=""
               width="24"
               height="24"
-              title={t('Not in latest save')}
-            />{:else if saveMark(r) === 'insave'}<span class="upd" title={t('In latest save')}
+            />{:else if saveMark(r) === 'insave'}<span class="upd"
               ><Icon name="save" size={13} /></span
             >{/if}
-          {#if prefs.recentDays && isRecent(r)}<span class="upd" title="Changed {ago(r.modified)}"
+          {#if prefs.recentDays && isRecent(r)}<span class="upd"
               ><Icon name="download" size={13} /></span
             >{/if}
-          {#if !r.valid}<span class="badge err" title="Invalid mod"
-              ><Icon name="error" size={15} /></span
+          {#if !r.valid}<span class="badge err"><Icon name="error" size={15} /></span
             >{:else if w}<span class="badge" class:err={w.some(isError)}
               ><Icon name={w.some(isError) ? 'error' : 'alert'} size={15} /></span
             >{:else if r.unsupported_version}<span class="badge"
