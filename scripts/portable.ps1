@@ -11,6 +11,8 @@ $stage = Join-Path $Out 'RimSort-rs'
 Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item $Exe (Join-Path $stage 'rimsort-rs.exe')
+# Steam subscribe/unsubscribe needs the Steamworks client DLL beside the exe.
+Copy-Item 'src-tauri/redist/win64/steam_api64.dll' $stage
 Set-Content (Join-Path $stage 'portable.txt') "Delete this file to store settings in %LOCALAPPDATA%\RimSort-rs instead of the data folder next to the exe."
 $zip = Join-Path $Out "RimSort-rs_${version}_x64-portable.zip"
 Remove-Item $zip -Force -ErrorAction SilentlyContinue

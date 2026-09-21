@@ -1,10 +1,28 @@
 # rimsort-rs
 
+> **Personal fork, use at your own risk.** This is a personal-use project. It is not affiliated with or endorsed by the
+> RimSort team, and no support is promised.
+>
+> **Written largely by AI.** This Rust port was built with heavy use of an AI coding assistant (Claude). It is tested
+> (unit tests, and sort output compared against RimSort's Python), but read the code before trusting it with a mod setup
+> you care about. Saving always keeps a timestamped backup of your `ModsConfig.xml`.
+
 A fast rewrite of [RimSort](https://github.com/RimSort/RimSort) (RimWorld mod manager) in Rust + Tauri 2 + Svelte 5.
 Goal: **speed and stability** — nothing on the UI thread waits on disk, parsing, or sorting.
 
 It reads and writes RimSort-compatible data (settings, community rules, user rules, aux metadata), so you can point it
 at an existing RimSort setup and it just works.
+
+## Download
+
+Grab the latest build from [Releases](https://github.com/watdafawx/rimsort-rs/releases):
+
+- **Installer** (`RimSort-rs_<version>_x64-setup.exe`) — per-user Windows installer.
+- **Portable** (`RimSort-rs_<version>_x64-portable.zip`) — unzip anywhere and run `rimsort-rs.exe`. The `portable.txt`
+  next to it keeps settings, databases and logs in a `data` folder beside the exe; delete that file to use
+  `%LOCALAPPDATA%\RimSort-rs` instead.
+
+Windows 10/11 with WebView2 (built in on Windows 11). The builds are not code-signed, so SmartScreen may warn.
 
 ## What it does today
 
