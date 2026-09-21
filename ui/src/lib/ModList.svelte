@@ -5,6 +5,7 @@
 
 <script lang="ts">
   import type { ModRow, Warning } from '../bindings'
+  import Icon from './Icon.svelte'
   import { t } from './i18n.svelte'
   import { describe, inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
@@ -172,37 +173,55 @@
 
 <section class="list">
   <header>
-    <strong>{title}</strong>
-    <span class="count"
-      >{shown.length !== rows.length ? `${shown.length} / ` : ''}{rows.length}</span
-    >
-    <select bind:value={typeFilter} title={t('Filter by mod source')} aria-label="Filter by type">
-      <option value="">{t('All')}</option>
-      {#each Object.entries(TYPE) as [k, [tag]] (k)}<option value={k}>{tag}</option>{/each}
-    </select>
-    {#if listId === 'inactive'}
+    <div class="hrow">
+      <strong>{title}</strong>
+      <span class="count"
+        >{shown.length !== rows.length ? `${shown.length} / ` : ''}{rows.length}</span
+      >
+      <span class="grow"></span>
       <select
-        title={t('Sort')}
-        aria-label="Sort by"
-        value={inactiveSort.key}
-        onchange={(e) => setInactiveSort(e.currentTarget.value as SortKey, inactiveSort.desc)}
+        class="compact"
+        bind:value={typeFilter}
+        title={t('Filter by mod source')}
+        aria-label="Filter by type"
       >
-        <option value="name">{t('Name')}</option>
-        <option value="author">{t('Author')}</option>
-        <option value="modified">{t('Modified')}</option>
-        <option value="type">{t('Type')}</option>
+        <option value="">{t('All')}</option>
+        {#each Object.entries(TYPE) as [k, [tag]] (k)}<option value={k}>{tag}</option>{/each}
       </select>
+      {#if listId === 'inactive'}
+        <select
+          class="compact"
+          title={t('Sort')}
+          aria-label="Sort by"
+          value={inactiveSort.key}
+          onchange={(e) => setInactiveSort(e.currentTarget.value as SortKey, inactiveSort.desc)}
+        >
+          <option value="name">{t('Name')}</option>
+          <option value="author">{t('Author')}</option>
+          <option value="modified">{t('Modified')}</option>
+          <option value="type">{t('Type')}</option>
+        </select>
+        <button
+          class="dir ghost icon"
+          title={inactiveSort.desc ? 'Descending' : 'Ascending'}
+          aria-label="Toggle sort direction"
+          onclick={() => setInactiveSort(inactiveSort.key, !inactiveSort.desc)}
+          ><span class:flip={!inactiveSort.desc}><Icon name="sort" size={15} /></span></button
+        >
+      {/if}
       <button
-        class="dir"
-        title={inactiveSort.desc ? 'Descending' : 'Ascending'}
-        onclick={() => setInactiveSort(inactiveSort.key, !inactiveSort.desc)}
-        >{inactiveSort.desc ? '↓' : '↑'}</button
+        class="ghost icon toggle"
+        class:on={onlyWarn}
+        title={t('Show only mods with warnings')}
+        aria-label="Show only mods with warnings"
+        aria-pressed={onlyWarn}
+        onclick={() => (onlyWarn = !onlyWarn)}><Icon name="alert" size={15} /></button
       >
-    {/if}
-    <label class="only" title={t('Show only mods with warnings')}
-      ><input type="checkbox" bind:checked={onlyWarn} />⚠</label
-    >
-    <input type="search" placeholder={t('Search name, author, package id…')} bind:value={query} />
+    </div>
+    <label class="search">
+      <Icon name="search" size={14} />
+      <input type="search" placeholder={t('Search name, author, package id…')} bind:value={query} />
+    </label>
   </header>
   <div
     class="scroll"
@@ -251,11 +270,13 @@
           <span class="tag {cls}">{tag}</span>
           <span class="name">{r.name}</span>
           <span class="author">{r.authors}</span>
-          {#if !r.valid}<span class="badge err">⛔</span>
-          {:else if w}<span class="badge" class:err={w.some(isError)}
-              >{w.some(isError) ? '⛔' : '⚠'}</span
-            >
-          {:else if r.unsupported_version}<span class="badge">⚠</span>{/if}
+          {#if !r.valid}<span class="badge err" title="Invalid mod"
+              ><Icon name="error" size={15} /></span
+            >{:else if w}<span class="badge" class:err={w.some(isError)}
+              ><Icon name={w.some(isError) ? 'error' : 'alert'} size={15} /></span
+            >{:else if r.unsupported_version}<span class="badge"
+              ><Icon name="alert" size={15} /></span
+            >{/if}
         </div>
       {/each}
       {#if dropAt !== null}<div
@@ -273,42 +294,86 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
+    background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: var(--radius);
     overflow: hidden;
   }
   header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.6rem;
-    background: var(--panel);
+    display: grid;
+    gap: 0.4rem;
+    padding: 0.55rem 0.65rem 0.5rem;
     border-bottom: 1px solid var(--line);
+    background: var(--panel);
   }
-  .only {
+  .hrow {
     display: flex;
     align-items: center;
-    gap: 0.2rem;
-    color: var(--dim);
-    cursor: pointer;
+    gap: 0.35rem;
+    min-width: 0;
   }
-  .only input {
-    flex: none;
+  .hrow strong {
+    font-size: 0.98rem;
+    letter-spacing: -0.01em;
   }
-  .badge {
-    color: #ecc94b;
-  }
-  .badge.err {
-    color: #f56565;
+  .grow {
+    flex: 1;
   }
   .count {
     color: var(--dim);
     font-variant-numeric: tabular-nums;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0 0.5rem;
+    font-size: 0.85em;
   }
-  input {
+  select.compact {
+    padding: 0.18rem 0.35rem;
+    font-size: 0.88em;
+    border-radius: 5px;
+  }
+  header button.icon {
+    padding: 0.25rem 0.35rem;
+  }
+  .toggle.on {
+    background: color-mix(in srgb, var(--warn) 18%, transparent);
+    color: var(--warn);
+    border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  }
+  .flip {
+    display: inline-flex;
+    transform: scaleY(-1);
+  }
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0 0.55rem;
+    color: var(--dim);
+    transition:
+      border-color 0.12s,
+      box-shadow 0.12s;
+  }
+  .search:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .search input {
     flex: 1;
     min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0.32rem 0;
+    box-shadow: none;
   }
+  .search input:focus {
+    box-shadow: none;
+  }
+
   .scroll {
     position: relative;
     flex: 1;
@@ -316,7 +381,8 @@
     outline: none;
   }
   .scroll:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--accent);
+    outline: none;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent);
   }
   .spacer {
     position: relative;
@@ -328,26 +394,30 @@
     height: 28px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0 0.6rem;
+    gap: 0.55rem;
+    padding: 0 0.7rem;
     box-sizing: border-box;
     user-select: none;
     cursor: default;
     white-space: nowrap;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+    transition: background 0.08s;
   }
   .row:hover {
     background: var(--hover);
   }
   .row.selected {
     background: var(--sel);
+    border-bottom-color: var(--sel-line);
   }
   .row.invalid {
-    opacity: 0.55;
+    opacity: 0.5;
   }
   .name {
     overflow: hidden;
     text-overflow: ellipsis;
     flex: 0 1 auto;
+    font-weight: 500;
   }
   .author {
     color: var(--dim);
@@ -355,31 +425,41 @@
     text-overflow: ellipsis;
     flex: 1 1 0;
     min-width: 0;
-    font-size: 0.85em;
+    font-size: 0.86em;
+  }
+  .badge {
+    display: inline-flex;
+    color: var(--warn);
+  }
+  .badge.err {
+    color: var(--err);
   }
   .tag {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    padding: 1px 4px;
-    border-radius: 3px;
+    letter-spacing: 0.02em;
+    padding: 1px 0;
+    border-radius: 4px;
     color: #fff;
-    min-width: 2rem;
+    width: 2.1rem;
+    flex: none;
     text-align: center;
+    opacity: 0.92;
   }
   .ludeon {
-    background: #b8860b;
+    background: #b3861a;
   }
   .workshop {
-    background: #2b6cb0;
+    background: #3a78c2;
   }
   .local {
-    background: #2f855a;
+    background: #338a62;
   }
   .cmd {
-    background: #6b46c1;
+    background: #7a56c8;
   }
   .git {
-    background: #c05621;
+    background: #c26a2d;
   }
   .unknown {
     background: #718096;
@@ -391,10 +471,11 @@
     height: 2px;
     background: var(--accent);
     pointer-events: none;
+    box-shadow: 0 0 6px var(--accent);
   }
   .empty {
     color: var(--dim);
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
   }
 </style>

@@ -135,7 +135,7 @@ describe('ModList filtering', () => {
       rows: [row('a'), row('b', { unsupported_version: true }), row('c')],
       warnings: { c: [w] },
     })
-    await fireEvent.click(screen.getByTitle('Show only mods with warnings').querySelector('input')!)
+    await fireEvent.click(screen.getByTitle('Show only mods with warnings'))
     expect(names().sort()).toEqual(['Mod b', 'Mod c'])
   })
 

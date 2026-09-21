@@ -4,7 +4,9 @@
   import { open as pickFile, save as pickSave } from '@tauri-apps/plugin-dialog'
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
-  import { initLanguage, LANGS, i18n, setLanguage, t } from './lib/i18n.svelte'
+  import Icon from './lib/Icon.svelte'
+  import { initLanguage, t } from './lib/i18n.svelte'
+  import { initTheme } from './lib/theme.svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import {
     call,
@@ -162,26 +164,6 @@
     target.addEventListener('pointerup', up)
   }
 
-  // ── theme ────────────────────────────────────────────────────────────
-  const THEME_KEY = 'rimsort-rs.theme'
-  let theme = $state<'auto' | 'dark' | 'light'>('auto')
-  try {
-    const saved = localStorage.getItem(THEME_KEY)
-    if (saved === 'dark' || saved === 'light') theme = saved
-  } catch {
-    /* storage unavailable */
-  }
-  $effect(() => {
-    const root = document.documentElement
-    if (theme === 'auto') root.removeAttribute('data-theme')
-    else root.dataset.theme = theme
-    try {
-      localStorage.setItem(THEME_KEY, theme)
-    } catch {
-      /* ignore */
-    }
-  })
-
   // Warn before closing the window with unsaved list changes.
   onMount(() => {
     const un = getCurrentWindow().onCloseRequested((e) => {
@@ -193,6 +175,7 @@
 
   onMount(() => {
     initLanguage()
+    initTheme()
   })
 
   onMount(() => {
@@ -261,89 +244,143 @@
 />
 
 <div class="app">
-  <header class="top">
-    <strong>RimSort-rs</strong>
+  <header class="topbar">
+    <div class="brand"><Icon name="package" size={18} /><strong>RimSort-rs</strong></div>
     {#if app.settings}
       <select
+        class="instance"
         aria-label="Instance"
+        title="Instance"
         value={app.settings.current_instance}
         onchange={(e) => switchInstance(e.currentTarget.value)}
       >
         {#each app.settings.instances as i (i.name)}<option>{i.name}</option>{/each}
       </select>
     {/if}
-    <span class="spacer"></span>
-    {#if app.dirty}<span class="dirty" title="Changes not yet written to ModsConfig.xml"
-        >● {t('unsaved')}</span
-      >{/if}
-    <select
-      id="lang"
-      aria-label="Language"
-      title="Language"
-      value={i18n.lang}
-      onchange={(e) => setLanguage(e.currentTarget.value)}
-    >
-      {#each LANGS as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
-    </select>
-    <select id="theme" aria-label="Theme" title="Theme" bind:value={theme}>
-      <option value="auto">{t('Auto theme')}</option>
-      <option value="dark">{t('Dark')}</option>
-      <option value="light">{t('Light')}</option>
-    </select>
-    <button id="settings" onclick={() => (showSettings = true)}>⚙ {t('Settings')}</button>
-  </header>
-
-  <nav class="toolbar">
-    <button id="refresh" onclick={doRefresh} disabled={app.scanning}>⟳ {t('Refresh')}</button>
-    <button id="sort" onclick={sort} disabled={!app.loaded}>⇅ {t('Sort')}</button>
-    <button id="save" class="primary" onclick={save} disabled={!app.loaded}>💾 {t('Save')}</button>
-    <button id="run" onclick={run} disabled={!app.loaded}>▶ {t('Run')}</button>
-    <div class="dropdown">
+    <span class="vsep"></span>
+    <div class="group">
+      <button id="refresh" onclick={doRefresh} disabled={app.scanning} title="Rescan mods (F5)">
+        <Icon name="refresh" />{t('Refresh')}
+      </button>
+      <button id="sort" onclick={sort} disabled={!app.loaded} title="Sort the active list">
+        <Icon name="sort" />{t('Sort')}
+      </button>
       <button
-        id="listmenu"
+        id="save"
+        class="primary"
+        onclick={save}
         disabled={!app.loaded}
-        onclick={(e) => {
-          e.stopPropagation()
-          listMenu = !listMenu
-        }}>⇄ {t('List')} ▾</button
+        title="Write ModsConfig.xml (Ctrl+S)"
       >
-      {#if listMenu}
-        <div class="menu" role="menu" style:position="absolute" style:top="100%" style:left="0">
-          <button role="menuitem" onclick={doImport}>{t('Import list…')}</button>
-          <button role="menuitem" onclick={() => (showBackups = true)}
-            >{t('Restore from backup…')}</button
-          >
-          <button role="menuitem" onclick={() => (showDownload = true)}
-            >{t('Download mods…')}</button
-          >
-          <hr />
-          {#each EXPORTS as x (x.format)}
-            <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
-          {/each}
-          <hr />
-          <button role="menuitem" onclick={() => copyList('Report', 'Report')}
-            >{t('Copy report')}</button
-          >
-          <button role="menuitem" onclick={() => copyList('PackageIds', 'Package ids')}>
-            Copy package ids
-          </button>
-        </div>
-      {/if}
+        <Icon name="save" />{t('Save')}
+      </button>
+      <button id="run" onclick={run} disabled={!app.loaded} title="Launch RimWorld">
+        <Icon name="play" />{t('Run')}
+      </button>
     </div>
-    <button id="undo" onclick={undo} disabled={!app.undoDepth} title="Undo (Ctrl+Z)">↶</button>
-    <button id="redo" onclick={redo} disabled={!app.redoDepth} title="Redo (Ctrl+Y)">↷</button>
-    {#if app.missingDeps}
-      <button id="deps" onclick={() => (showDeps = true)}>🧩 {app.missingDeps} missing</button>
+    <span class="vsep"></span>
+    <div class="group">
+      <div class="dropdown">
+        <button
+          id="listmenu"
+          class="ghost"
+          disabled={!app.loaded}
+          onclick={(e) => {
+            e.stopPropagation()
+            listMenu = !listMenu
+          }}><Icon name="list" />{t('List')}<Icon name="chevron" size={14} /></button
+        >
+        {#if listMenu}
+          <div
+            class="menu"
+            role="menu"
+            style:position="absolute"
+            style:top="calc(100% + 4px)"
+            style:left="0"
+          >
+            <button role="menuitem" onclick={doImport}>{t('Import list…')}</button>
+            <button role="menuitem" onclick={() => (showBackups = true)}
+              >{t('Restore from backup…')}</button
+            >
+            <button role="menuitem" onclick={() => (showDownload = true)}
+              >{t('Download mods…')}</button
+            >
+            <hr />
+            {#each EXPORTS as x (x.format)}
+              <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
+            {/each}
+            <hr />
+            <button role="menuitem" onclick={() => copyList('Report', 'Report')}
+              >{t('Copy report')}</button
+            >
+            <button role="menuitem" onclick={() => copyList('PackageIds', 'Package ids')}>
+              Copy package ids
+            </button>
+          </div>
+        {/if}
+      </div>
+      <button
+        id="undo"
+        class="ghost icon"
+        onclick={undo}
+        disabled={!app.undoDepth}
+        title="Undo (Ctrl+Z)"
+        aria-label="Undo"
+      >
+        <Icon name="undo" />
+      </button>
+      <button
+        id="redo"
+        class="ghost icon"
+        onclick={redo}
+        disabled={!app.redoDepth}
+        title="Redo (Ctrl+Y)"
+        aria-label="Redo"
+      >
+        <Icon name="redo" />
+      </button>
+      <button
+        id="clear"
+        class="ghost"
+        onclick={clearActive}
+        disabled={!app.loaded}
+        title="Disable every mod except the base game and DLC"
+      >
+        <Icon name="trash" />{t('Clear')}
+      </button>
+    </div>
+    <span class="vsep"></span>
+    <div class="group">
+      {#if app.missingDeps}
+        <button
+          id="deps"
+          class="ghost attn"
+          onclick={() => (showDeps = true)}
+          title="Required mods that are not active"
+        >
+          <Icon name="link" />{app.missingDeps} missing
+        </button>
+      {/if}
+      <button
+        id="logtab"
+        class="ghost"
+        class:active={view === 'log'}
+        onclick={() => (view = view === 'log' ? 'mods' : 'log')}
+        title="Show RimWorld's Player.log"
+      >
+        <Icon name="log" />Log
+      </button>
+    </div>
+    <span class="spacer"></span>
+    {#if app.dirty}
+      <span class="dirty" title="Changes not yet written to ModsConfig.xml"
+        ><Icon name="dot" size={22} />{t('unsaved')}</span
+      >
     {/if}
-    <button
-      id="logtab"
-      class:active={view === 'log'}
-      onclick={() => (view = view === 'log' ? 'mods' : 'log')}
-    >
-      📜 Log
+    <button id="settings" class="ghost" onclick={() => (showSettings = true)}>
+      <Icon name="settings" />{t('Settings')}
     </button>
-    <button id="clear" onclick={clearActive} disabled={!app.loaded}>{t('Clear')}</button>
-  </nav>
+  </header>
 
   {#if external.changed}
     <div class="banner external">
@@ -437,7 +474,10 @@
         {#if detail.invalid_reason}<p class="bad">{detail.invalid_reason}</p>{/if}
         <p class="desc">{detail.description}</p>
       {:else}
-        <p class="dim">{t('Select a mod to see its details.')}</p>
+        <div class="empty">
+          <Icon name="info" size={30} />
+          <p>{t('Select a mod to see its details.')}</p>
+        </div>
       {/if}
     </aside>
     <div
@@ -477,25 +517,34 @@
   <footer class="status">
     {#if app.jobTask && tasks[app.jobTask]}
       {@const j = tasks[app.jobTask]}
-      <span class="job">⬇ {j.msg || 'Working…'}</span>
+      <Icon name="download" size={14} />
+      <span class="job">{j.msg || 'Working…'}</span>
       <progress max={j.total || 1} value={j.done}></progress>
-      <button onclick={() => call(commands.cancelTask(j.id))}>{t('Cancel')}</button>
+      <button class="ghost small" onclick={() => call(commands.cancelTask(j.id))}
+        >{t('Cancel')}</button
+      >
     {:else if app.scanning}
+      <Icon name="refresh" size={14} />
       <span>Scanning… {scan?.done ?? 0} / {scan?.total ?? '?'}</span>
       <progress max={scan?.total || 1} value={scan?.done ?? 0}></progress>
     {:else if app.loaded}
-      <span>RimWorld {app.gameVersion}</span>
-      <span>{app.active.length} active · {app.inactive.length} inactive</span>
-      {#if app.errorCount}<span class="err">⛔ {app.errorCount} with errors</span>{/if}
-      {#if app.warningCount}<span class="warn">⚠ {app.warningCount} with warnings</span>{/if}
+      <span class="chip">RimWorld {app.gameVersion}</span>
+      <span class="chip strong">{app.active.length} active · {app.inactive.length} inactive</span>
+      {#if app.errorCount}<span class="chip err"
+          ><Icon name="error" size={13} />{app.errorCount} with errors</span
+        >{/if}
+      {#if app.warningCount}<span class="chip warn"
+          ><Icon name="alert" size={13} />{app.warningCount} with warnings</span
+        >{/if}
+      {#if app.duplicates}<button class="chip link" onclick={() => (showDups = true)}
+          >{app.duplicates} duplicate package ids</button
+        >{/if}
+      <span class="spacer"></span>
       <span class="dim"
         >scanned in {app.scanMs} ms · {app.communityRules
           ? `${app.communityRules} community rules`
           : 'no community rules'}</span
       >
-      {#if app.duplicates}<button class="link dim" onclick={() => (showDups = true)}
-          >{app.duplicates} duplicate package ids</button
-        >{/if}
     {:else}
       <span class="dim">{t('No mods loaded — check Settings → Locations.')}</span>
     {/if}
@@ -651,83 +700,153 @@
   .app {
     height: 100vh;
     display: grid;
-    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-rows: auto auto auto auto 1fr auto;
   }
-  .top,
-  .toolbar,
-  .status {
+
+  /* Top bar */
+  .topbar {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.4rem 0.75rem;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
+    min-width: 0;
   }
-  .status {
-    border-top: 1px solid var(--line);
-    border-bottom: 0;
-    font-size: 0.85rem;
-    gap: 1.25rem;
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--accent);
+    margin-right: 0.15rem;
+  }
+  .brand strong {
+    color: var(--fg);
+    letter-spacing: -0.01em;
+  }
+  .instance {
+    max-width: 12rem;
+    font-weight: 500;
+  }
+  .group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .vsep {
+    width: 1px;
+    height: 1.4rem;
+    background: var(--line);
+    margin: 0 0.25rem;
   }
   .spacer {
     flex: 1;
   }
+  .topbar button.icon {
+    padding: 0.32rem 0.45rem;
+  }
+  .topbar button.active {
+    background: var(--sel);
+    border-color: var(--sel-line);
+  }
+  .topbar button.attn {
+    color: var(--warn);
+  }
   .dirty {
-    color: #ecc94b;
+    display: inline-flex;
+    align-items: center;
+    color: var(--warn);
+    font-weight: 600;
+    margin-right: 0.25rem;
   }
-  .job {
-    max-width: 50ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .dirty :global(svg) {
+    margin-right: -0.2rem;
   }
-  .banner.external {
+
+  /* Banners */
+  .banner {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: #23405f;
+    padding: 0.4rem 0.9rem;
+    background: color-mix(in srgb, var(--warn) 14%, var(--panel));
+    border-bottom: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+    font-size: 0.92em;
   }
-  .banner {
-    padding: 0.3rem 0.75rem;
-    background: #4a3b10;
+  .banner.external {
+    background: color-mix(in srgb, var(--accent) 13%, var(--panel));
+    border-bottom-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
+  .banner button:not(.link) {
+    padding: 0.15rem 0.6rem;
   }
   .missing {
-    font-size: 0.8rem;
+    font-size: 0.85em;
     margin-top: 0.25rem;
     word-break: break-all;
+    color: var(--dim);
   }
+
+  /* Main body */
   .body {
     display: grid;
     gap: 0;
-    padding: 0.6rem;
+    padding: 0.65rem 0.75rem;
     min-height: 0;
+  }
+  .body.single {
+    grid-template-columns: 1fr;
   }
   .gutter {
     cursor: col-resize;
-    background: transparent;
     touch-action: none;
+    border-radius: 4px;
+    transition: background 0.12s;
   }
   .gutter:hover,
   .gutter:active {
-    background: var(--accent);
-    opacity: 0.5;
+    background: color-mix(in srgb, var(--accent) 45%, transparent);
   }
+
+  /* Info panel */
   .info {
     overflow: auto;
+    background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius);
+    padding: 0.85rem 0.95rem;
     min-width: 0;
   }
   .info h3 {
-    margin: 0 0 0.5rem;
+    font-size: 1.12rem;
+    margin: 0.1rem 0 0.7rem;
+    line-height: 1.25;
+  }
+  .empty {
+    display: grid;
+    place-items: center;
+    gap: 0.5rem;
+    margin-top: 3rem;
+    color: var(--dim);
+    text-align: center;
+  }
+  .empty p {
+    margin: 0;
+    max-width: 22ch;
+  }
+  .preview {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.7rem;
+    border: 1px solid var(--line);
+    display: block;
   }
   dl {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 0.2rem 0.6rem;
+    gap: 0.3rem 0.75rem;
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.92em;
   }
   dt {
     color: var(--dim);
@@ -736,117 +855,178 @@
     margin: 0;
     word-break: break-word;
   }
-  .preview {
-    width: 100%;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
+  .path {
+    font-size: 0.8em;
+    color: var(--dim);
   }
-  .body.single {
-    grid-template-columns: 1fr;
+  .desc {
+    white-space: pre-wrap;
+    font-size: 0.9em;
+    max-height: 40vh;
+    overflow: auto;
+    color: color-mix(in srgb, var(--fg) 88%, var(--dim));
+    border-top: 1px solid var(--line);
+    padding-top: 0.7rem;
+    margin-top: 0.8rem;
   }
-  button.active {
-    background: var(--sel);
+  .note {
+    white-space: pre-wrap;
+    font-size: 0.88em;
+    background: var(--panel-2);
+    border-left: 3px solid var(--accent);
+    padding: 0.4rem 0.6rem;
+    margin: 0.6rem 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   }
-  .menu .danger-item:not(:disabled) {
-    color: #f56565;
+  .warnings {
+    margin: 0.7rem 0;
+    padding: 0.5rem 0.7rem 0.5rem 1.6rem;
+    font-size: 0.9em;
+    color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 9%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--warn) 28%, var(--line));
+    border-radius: var(--radius-sm);
   }
-  .cycle {
+  .warnings li.err {
+    color: var(--err);
+  }
+  .bad,
+  .err {
+    color: var(--err);
+  }
+  .warn {
+    color: var(--warn);
+  }
+  .dim {
+    color: var(--dim);
+  }
+
+  /* Status bar */
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    font-size: 0.88em;
+    min-height: 2rem;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: var(--panel-2);
     border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 0.5rem 0.7rem;
-    margin: 0.5rem 0;
-    font-size: 0.85rem;
+    color: var(--dim);
   }
-  .cycle ul {
-    margin: 0.3rem 0 0;
-    padding-left: 1.1rem;
+  .chip.strong {
+    color: var(--fg);
   }
+  .chip.err {
+    color: var(--err);
+    border-color: color-mix(in srgb, var(--err) 40%, var(--line));
+    background: color-mix(in srgb, var(--err) 10%, var(--panel-2));
+  }
+  .chip.warn {
+    color: var(--warn);
+    border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
+    background: color-mix(in srgb, var(--warn) 10%, var(--panel-2));
+  }
+  button.chip {
+    cursor: pointer;
+    padding: 0.1rem 0.55rem;
+  }
+  button.chip:hover {
+    color: var(--fg);
+  }
+  .job {
+    max-width: 50ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  progress {
+    width: 12rem;
+    height: 0.5rem;
+    accent-color: var(--accent);
+  }
+  button.small {
+    padding: 0.05rem 0.5rem;
+  }
+
+  /* Menus */
   .dropdown {
     position: relative;
   }
   .menu {
     position: fixed;
     z-index: 30;
-    min-width: 200px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 0.25rem;
+    min-width: 13rem;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    padding: 0.3rem;
     display: grid;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow);
+    animation: rise 0.12s ease-out;
   }
   .menu button {
     text-align: left;
     border: 0;
     background: none;
-    padding: 0.35rem 0.6rem;
-    border-radius: 4px;
+    padding: 0.38rem 0.65rem;
+    border-radius: 5px;
+  }
+  .menu button:hover:not(:disabled) {
+    background: var(--hover);
   }
   .menu hr {
     border: 0;
     border-top: 1px solid var(--line);
-    margin: 0.25rem 0;
-    width: 100%;
+    margin: 0.25rem 0.2rem;
+    width: auto;
   }
-  .path {
-    font-size: 0.75rem;
+  .menu .danger-item:not(:disabled) {
+    color: var(--err);
   }
-  .note {
-    white-space: pre-wrap;
-    font-size: 0.85rem;
-    background: var(--panel);
-    border-left: 3px solid var(--accent);
-    padding: 0.3rem 0.5rem;
-    margin: 0.4rem 0;
-  }
-  .desc {
-    white-space: pre-wrap;
-    font-size: 0.85rem;
-    max-height: 40vh;
-    overflow: auto;
-  }
-  .bad,
-  .err {
-    color: #f56565;
-  }
-  .warn {
-    color: #ecc94b;
-  }
-  .warnings {
-    margin: 0.5rem 0;
-    padding-left: 1.1rem;
-    font-size: 0.85rem;
-    color: #ecc94b;
-  }
-  .warnings li.err {
-    color: #f56565;
-  }
-  .dim {
-    color: var(--dim);
-  }
-  .link {
-    background: none;
-    border: 0;
-    color: inherit;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-  }
+
+  /* Sort-cycle dialog */
   .backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(5, 8, 14, 0.6);
+    backdrop-filter: blur(2px);
     display: grid;
     place-items: center;
-    z-index: 10;
+    z-index: 40;
+    animation: fade 0.12s ease-out;
   }
   .dialog {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 1.1rem 1.3rem;
     max-width: 80vw;
     max-height: 80vh;
     overflow: auto;
+  }
+  .dialog h2 {
+    margin-bottom: 0.4rem;
+  }
+  .cycle {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.75rem;
+    margin: 0.5rem 0;
+    font-size: 0.88em;
+    background: var(--panel-2);
+  }
+  .cycle ul {
+    margin: 0.3rem 0 0;
+    padding-left: 1.1rem;
   }
 </style>
