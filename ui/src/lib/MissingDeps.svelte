@@ -5,7 +5,7 @@
   import { onMount } from 'svelte'
   import type { MissingDep } from '../bindings'
   import { call, commands, toast } from './ipc.svelte'
-  import { app, downloadMods, enable } from './store.svelte'
+  import { app, downloadMods, enable, steamSubscribe } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
   let deps = $state<MissingDep[]>([])
@@ -76,6 +76,11 @@
                   onclick={() => downloadMods([d.workshop_id!])}>{t('Download')}</button
                 >
               {/if}
+              <button
+                disabled={!d.workshop_id}
+                title={t('Subscribe in the Steam client; Steam downloads it')}
+                onclick={() => steamSubscribe([d.workshop_id!], true)}>{t('Subscribe')}</button
+              >
               <button
                 disabled={!d.workshop_id}
                 onclick={() =>

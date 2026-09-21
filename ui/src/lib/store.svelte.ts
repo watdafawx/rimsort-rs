@@ -296,6 +296,22 @@ export async function downloadMods(ids: string[]) {
   )
 }
 
+/** Subscribe to / unsubscribe from Workshop items in the Steam client (Steam downloads or removes them itself). */
+export async function steamSubscribe(ids: string[], subscribe: boolean) {
+  const results = await call(commands.steamSetSubscribed(ids, subscribe))
+  const failed = results.filter((r) => r.error)
+  if (failed.length) {
+    toast(`Steam: ${failed[0].error}`, 8000)
+  } else {
+    toast(
+      subscribe
+        ? t('Subscribed — Steam will download it shortly')
+        : t('Unsubscribed — Steam will remove it shortly'),
+      5000,
+    )
+  }
+}
+
 /** Run todds (texture optimizer / clean-up) as a background job. */
 export async function runTodds(options: ToddsOptions, doneText: string): Promise<boolean> {
   if (app.jobTask) {

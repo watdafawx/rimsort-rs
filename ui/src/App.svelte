@@ -42,6 +42,7 @@
     deleteMod,
     downloadMods,
     runTodds,
+    steamSubscribe,
     describe,
     isError,
     disable,
@@ -144,6 +145,15 @@
     toast(out.split('\n').slice(-1)[0] || t('Up to date'), 5000)
   }
   const steamUrl = (pfid: string) => `steam://url/CommunityFilePage/${pfid}`
+  async function unsubscribe(row: ModRow) {
+    if (
+      !confirm(
+        t('Unsubscribe from “{name}” in Steam? Steam will remove the mod.', { name: row.name }),
+      )
+    )
+      return
+    await steamSubscribe([row.published_file_id!], false)
+  }
   function act(fn: () => unknown) {
     try {
       fn()
@@ -550,6 +560,9 @@
                 <button class="link" onclick={() => downloadMods([m.workshop_id])}
                   >{t('Download')}</button
                 >
+                <button class="link" onclick={() => steamSubscribe([m.workshop_id], true)}
+                  >{t('Subscribe')}</button
+                >
               {:else}
                 <span class="dim">{t('no unambiguous Workshop match')}</span>
               {/if}
@@ -826,6 +839,11 @@
         <button role="menuitem" onclick={() => act(() => createLocalCopy(menu!.row.id))}>
           {t('Create local copy')}
         </button>
+        <button
+          role="menuitem"
+          disabled={!menu.row.published_file_id}
+          onclick={() => act(() => unsubscribe(menu!.row))}>{t('Unsubscribe in Steam…')}</button
+        >
       {/if}
       {#if menu.row.mod_type === 'Git'}
         <button role="menuitem" onclick={() => act(() => updateGit(menu!.row.id))}>

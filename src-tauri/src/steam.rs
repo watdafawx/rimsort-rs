@@ -56,7 +56,13 @@ pub fn set_subscribed(ids: &[String], subscribe: bool) -> Result<Vec<SteamOutcom
         let error = loop {
             client.run_callbacks();
             match rx.recv_timeout(Duration::from_millis(50)) {
-                Ok(Ok(())) => break None,
+                Ok(Ok(())) => {
+                    if subscribe {
+                        // Subscribing alone can leave the download queued until Steam's next sync.
+                        ugc.download_item(PublishedFileId(id), true);
+                    }
+                    break None;
+                }
                 Ok(Err(e)) => break Some(e.to_string()),
                 Err(_) if std::time::Instant::now() > deadline => {
                     break Some("Steam did not answer in time".into());
