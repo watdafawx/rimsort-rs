@@ -15,7 +15,9 @@
 
   const LIMIT = 10
   let all = $state(false)
-  const shown = $derived(all ? ids : ids.slice(0, LIMIT))
+  // A mod can list the same dependency twice (e.g. once per game version); keyed lists need unique ids.
+  const unique = $derived([...new Set(ids)])
+  const shown = $derived(all ? unique : unique.slice(0, LIMIT))
 </script>
 
 <span class="pkgs">
@@ -27,9 +29,9 @@
       <span class="gone" title={t('Not installed')}>{id}</span>
     {/if}
   {/each}
-  {#if ids.length > LIMIT && !all}
+  {#if unique.length > LIMIT && !all}
     <button class="link" onclick={() => (all = true)}
-      >{t('+{n} more', { n: ids.length - LIMIT })}</button
+      >{t('+{n} more', { n: unique.length - LIMIT })}</button
     >
   {/if}
 </span>

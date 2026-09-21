@@ -1,12 +1,7 @@
-<script module lang="ts">
-  // Shared across card instances (module scope) so the cache survives hover-in/out.
-  const cardCache = new Map<string, ModDetail>()
-</script>
-
 <script lang="ts">
   import { convertFileSrc } from '@tauri-apps/api/core'
   import type { ModDetail, ModRow, Warning, WorkshopMeta } from '../bindings'
-  import { call, commands } from './ipc.svelte'
+  import { cachedDetail, cachedSteam, prefetch } from './hovercache'
   import { t, T } from './i18n.svelte'
   import Icon from './Icon.svelte'
   import steamIcon from '../assets/mod/steam_icon.png'
@@ -29,37 +24,20 @@
     Unknown: T('Unknown source'),
   }
 
-  // Details are fetched on demand and cached, so hovering back and forth costs nothing.
-  const cache = cardCache
+  // Filled by `prefetch` on mouse-enter, so both are normally there on the first frame.
   let detail = $state<ModDetail | null>(null)
-  $effect(() => {
-    const id = row.id
-    detail = cache.get(id) ?? null
-    if (detail) return
-    call(commands.getMod(id)).then(
-      (d) => {
-        if (d) {
-          if (cache.size > 200) cache.delete(cache.keys().next().value!)
-          cache.set(id, d)
-        }
-        if (row.id === id) detail = d
-      },
-      () => {},
-    )
-  })
-
-  // Steam details arrive from the background sync; look them up on every hover (in-memory, cheap).
   let steam = $state<WorkshopMeta | null>(null)
   $effect(() => {
-    const pfid = row.published_file_id
-    steam = null
-    if (!pfid) return
-    call(commands.getWorkshopMeta(pfid)).then(
-      (m) => {
-        if (row.published_file_id === pfid) steam = m
-      },
-      () => {},
-    )
+    const r = row
+    detail = cachedDetail(r.id)
+    steam = cachedSteam(r.published_file_id)
+    if (detail && (steam || !r.published_file_id)) return
+    prefetch(r).then(() => {
+      if (row.id === r.id) {
+        detail = cachedDetail(r.id)
+        steam = cachedSteam(r.published_file_id)
+      }
+    })
   })
   const fmtCount = (n: number) =>
     n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n)

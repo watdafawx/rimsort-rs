@@ -9,6 +9,7 @@
   import { t, T } from './i18n.svelte'
   import { prefs, ROW_HEIGHT } from './prefs.svelte'
   import { tip } from './tip'
+  import { prefetch } from './hovercache'
   import steamIcon from '../assets/mod/steam_icon.png'
   import ludeonIcon from '../assets/mod/ludeon_icon.png'
   import localIcon from '../assets/mod/local_icon.png'
@@ -24,6 +25,7 @@
   let hoverTimer: ReturnType<typeof setTimeout> | undefined
   function hoverIn(r: ModRow, e: MouseEvent) {
     clearTimeout(hoverTimer)
+    void prefetch(r) // warm the card's data while the delay runs
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     hoverTimer = setTimeout(() => onhover?.(r, rect), 450)
   }

@@ -8,6 +8,7 @@ import {
   type Warning,
 } from '../bindings'
 import { call, external, toast, waitTask } from './ipc.svelte'
+import { clearDetails } from './hovercache'
 import { t } from './i18n.svelte'
 
 export const app = $state({
@@ -184,6 +185,7 @@ export async function refresh(keep = false) {
     undoStack.length = redoStack.length = 0 // snapshots may reference mods that just changed
     syncDepth()
     app.loaded = true
+    clearDetails()
     revalidate(0)
     void startWorkshopSync()
   } finally {
