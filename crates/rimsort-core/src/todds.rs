@@ -48,6 +48,8 @@ pub struct ToddsOptions {
     pub custom_command: String,
     /// Only the active mods; otherwise every mod in the local and Workshop folders.
     pub active_mods_target: bool,
+    /// Run the optimizer before every game launch.
+    pub auto_before_launch: bool,
 }
 
 impl Default for ToddsOptions {
@@ -58,6 +60,7 @@ impl Default for ToddsOptions {
             overwrite: false,
             custom_command: String::new(),
             active_mods_target: true,
+            auto_before_launch: false,
         }
     }
 }

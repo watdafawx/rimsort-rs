@@ -94,6 +94,10 @@
           a DDS
         </label>
         <label class="check">
+          <input type="checkbox" bind:checked={opts.auto_before_launch} /> Optimize automatically before
+          launching the game
+        </label>
+        <label class="check">
           <input type="checkbox" bind:checked={opts.dry_run} /> Dry run (only list what would change)
         </label>
       </fieldset>

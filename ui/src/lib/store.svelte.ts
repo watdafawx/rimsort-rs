@@ -286,9 +286,12 @@ export async function downloadMods(ids: string[]) {
 }
 
 /** Run todds (texture optimizer / clean-up) as a background job. */
-export async function runTodds(options: ToddsOptions, doneText: string) {
-  if (app.jobTask) return toast('A background job is already running')
-  await runJob(call(commands.runTodds(options)), doneText)
+export async function runTodds(options: ToddsOptions, doneText: string): Promise<boolean> {
+  if (app.jobTask) {
+    toast('A background job is already running')
+    return false
+  }
+  return runJob(call(commands.runTodds(options)), doneText)
 }
 
 /** Copy a (Workshop) mod into the local mods folder. */

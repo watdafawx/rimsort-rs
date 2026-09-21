@@ -37,6 +37,7 @@
     createLocalCopy,
     deleteMod,
     downloadMods,
+    runTodds,
     describe,
     isError,
     disable,
@@ -248,6 +249,22 @@
       !confirm('You have unsaved changes; RimWorld will use the last saved list. Launch anyway?')
     )
       return
+    const todds = await call(commands.getToddsOptions())
+    if (todds.auto_before_launch) {
+      toast('Optimizing textures before launch…', 2500)
+      // The saved options apply; a failed run is reported by the job itself and aborts the launch.
+      if (
+        !(await runTodds(
+          {
+            ...todds,
+            dry_run: false,
+            preset: todds.preset === 'Clean' ? 'Optimized' : todds.preset,
+          },
+          'Textures optimized',
+        ))
+      )
+        return
+    }
     await call(commands.launchGame())
   }
 

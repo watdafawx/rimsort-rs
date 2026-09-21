@@ -394,6 +394,8 @@ export type ToddsOptions = {
 	custom_command: string,
 	/**  Only the active mods; otherwise every mod in the local and Workshop folders. */
 	active_mods_target: boolean,
+	/**  Run the optimizer before every game launch. */
+	auto_before_launch: boolean,
 };
 
 /**  User-editable rules for one mod (stored in `userRules.json`). */

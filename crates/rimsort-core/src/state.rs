@@ -1013,6 +1013,7 @@ Total # of mods: {}
             overwrite: flag("todds_overwrite", false),
             custom_command: text("todds_custom_command"),
             active_mods_target: flag("todds_active_mods_target", true),
+            auto_before_launch: flag("auto_run_todds_before_launch", false),
         }
     }
 
@@ -1026,6 +1027,7 @@ Total # of mods: {}
             put(s, "todds_overwrite", o.overwrite.into());
             put(s, "todds_custom_command", o.custom_command.clone().into());
             put(s, "todds_active_mods_target", o.active_mods_target.into());
+            put(s, "auto_run_todds_before_launch", o.auto_before_launch.into());
             Ok(())
         })
     }
