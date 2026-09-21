@@ -18,6 +18,7 @@ pub mod rules;
 pub mod search;
 pub mod settings;
 pub mod sort;
+pub mod startup_impact;
 mod state;
 pub mod steamacf;
 pub mod steamcmd;

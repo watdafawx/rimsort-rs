@@ -557,6 +557,14 @@
             <dd>{detail.supported_versions.join(', ')}</dd>{/if}
           {#if detail.workshop_updated}<dt>{t('Updated')}</dt>
             <dd>{new Date(detail.workshop_updated * 1000).toLocaleDateString()}</dd>{/if}
+          {#if detail.startup_ms != null}<dt title="Load time measured by the Loading Progress mod">
+              Startup
+            </dt>
+            <dd>
+              {Math.round(detail.startup_ms)} ms{detail.startup_off_thread_ms
+                ? ` (+${Math.round(detail.startup_off_thread_ms)} ms off-thread)`
+                : ''}
+            </dd>{/if}
           {#if detail.mod_version}<dt>{t('Version')}</dt>
             <dd>{detail.mod_version}</dd>{/if}
           <dt>{t('Path')}</dt>

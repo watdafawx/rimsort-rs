@@ -44,6 +44,14 @@ pub struct AppState {
     last_save: Arc<Mutex<Option<Instant>>>,
     /// RimSort's Workshop database, parsed on first use (it is ~50 MB of JSON).
     steam_db: std::sync::OnceLock<Option<crate::steamdb::SteamDb>>,
+    /// Startup-impact report of the current instance, re-read when the file's mtime changes.
+    startup_report: Mutex<
+        Option<(
+            String,
+            std::time::SystemTime,
+            Arc<crate::startup_impact::Report>,
+        )>,
+    >,
 }
 
 impl AppState {
@@ -94,6 +102,7 @@ impl AppState {
             watcher: Mutex::new(None),
             last_save: Arc::default(),
             steam_db: Default::default(),
+            startup_report: Default::default(),
         })
     }
 
@@ -415,10 +424,39 @@ impl AppState {
         crate::search::search(&index, q)
     }
 
+    /// Startup timings from the "Loading Progress" mod for this mod, if a report exists.
+    fn startup_impact(
+        &self,
+        package_id: &str,
+        name: &str,
+    ) -> Option<crate::startup_impact::Impact> {
+        let config = self.current_instance().ok()?.config_folder;
+        let mut cache = self.startup_report.lock().unwrap();
+        let path = std::path::Path::new(&config)
+            .parent()?
+            .join("StartupImpactData.xml");
+        let mtime = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
+        let fresh =
+            matches!((&*cache, mtime), (Some((c, t, _)), Some(m)) if *c == config && *t == m);
+        if !fresh {
+            *cache =
+                crate::startup_impact::load(&config).map(|(t, r)| (config.clone(), t, Arc::new(r)));
+        }
+        cache.as_ref()?.2.find(package_id, name)
+    }
+
     pub fn mod_detail(&self, id: ModId) -> Option<ModDetail> {
+        let (pid, name) = {
+            let s = self.session.read().unwrap();
+            let m = s.index.get(id)?;
+            (m.package_id.clone(), m.name.clone())
+        };
+        let impact = self.startup_impact(&pid, &name);
         let s = self.session.read().unwrap();
         let m = s.index.get(id)?;
         Some(ModDetail {
+            startup_ms: impact.map(|i| i.total_ms),
+            startup_off_thread_ms: impact.map(|i| i.off_thread_ms),
             id: m.id,
             name: m.name.clone(),
             package_id: m.package_id.clone(),

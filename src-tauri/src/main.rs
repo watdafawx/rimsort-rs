@@ -10,6 +10,7 @@ use rimsort_core::{
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
+#[cfg(any(debug_assertions, test))]
 use specta_typescript::Typescript;
 use std::{path::PathBuf, sync::Arc};
 use tauri::{AppHandle, Manager, State, Wry};
@@ -453,6 +454,7 @@ fn log_dir_of(app: &AppHandle) -> tauri::Result<PathBuf> {
     }
 }
 
+#[cfg(any(debug_assertions, test))]
 const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../ui/src/bindings.ts");
 
 fn main() {

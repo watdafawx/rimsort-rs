@@ -43,6 +43,9 @@ export const commands = {
 	note: string,
 	/**  When the installed Workshop version was published (unix seconds), if Steam's manifest knows. */
 	workshop_updated: number | null,
+	/**  Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists. */
+	startup_ms: number | null,
+	startup_off_thread_ms: number | null,
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
@@ -254,6 +257,9 @@ export type ModDetail = {
 	note: string,
 	/**  When the installed Workshop version was published (unix seconds), if Steam's manifest knows. */
 	workshop_updated: number | null,
+	/**  Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists. */
+	startup_ms: number | null,
+	startup_off_thread_ms: number | null,
 };
 
 /**  Stable mod identity: uuid5 of the mod folder path, same across scans. */

@@ -108,6 +108,9 @@ pub struct ModDetail {
     pub note: String,
     /// When the installed Workshop version was published (unix seconds), if Steam's manifest knows.
     pub workshop_updated: Option<u32>,
+    /// Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists.
+    pub startup_ms: Option<f32>,
+    pub startup_off_thread_ms: Option<f32>,
 }
 
 /// Personal color/tags/note for a mod.
