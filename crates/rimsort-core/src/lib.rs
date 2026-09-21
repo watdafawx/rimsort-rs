@@ -15,6 +15,7 @@ pub mod mods;
 pub mod modsconfig;
 pub mod paths;
 pub mod rules;
+pub mod search;
 pub mod settings;
 pub mod sort;
 mod state;

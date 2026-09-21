@@ -22,6 +22,7 @@
   import Backups from './lib/Backups.svelte'
   import ConfirmDelete from './lib/ConfirmDelete.svelte'
   import DownloadDialog from './lib/DownloadDialog.svelte'
+  import SearchDialog from './lib/SearchDialog.svelte'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MetaEditor from './lib/MetaEditor.svelte'
@@ -56,6 +57,7 @@
   let showDeps = $state(false)
   let showDups = $state(false)
   let showDownload = $state(false)
+  let showSearch = $state(false)
   let showBackups = $state(false)
   let deleting = $state<ModDetail | null>(null)
   let editRuleId = $state<string | null>(null)
@@ -253,7 +255,10 @@
       const k = e.key.toLowerCase()
       if (k === 'z' && !e.shiftKey) undo()
       else if (k === 'y' || (k === 'z' && e.shiftKey)) redo()
-      else if (k === 's') {
+      else if (k === 'f' && e.shiftKey) {
+        e.preventDefault()
+        showSearch = true
+      } else if (k === 's') {
         e.preventDefault()
         if (app.dirty) void trySave()
       }
@@ -324,6 +329,9 @@
             >
             <button role="menuitem" onclick={() => (showDownload = true)}
               >{t('Download mods…')}</button
+            >
+            <button role="menuitem" onclick={() => (showSearch = true)}
+              >{t('Search in mod files…')}</button
             >
             <hr />
             {#each EXPORTS as x (x.format)}
@@ -709,6 +717,7 @@
   {#if showBackups}<Backups onclose={() => (showBackups = false)} />{/if}
 
   {#if showDownload}<DownloadDialog onclose={() => (showDownload = false)} />{/if}
+  {#if showSearch}<SearchDialog onclose={() => (showSearch = false)} />{/if}
 
   {#if showDups}<Duplicates onclose={() => (showDups = false)} />{/if}
 

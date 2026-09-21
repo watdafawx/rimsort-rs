@@ -3447,6 +3447,7 @@ dependencies = [
  "notify-debouncer-mini",
  "petgraph",
  "rayon",
+ "regex",
  "reqwest",
  "rusqlite",
  "serde",

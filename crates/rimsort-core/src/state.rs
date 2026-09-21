@@ -403,6 +403,15 @@ impl AppState {
         }
     }
 
+    /// Search mod folder contents. Clones the index handle so a long search never blocks edits.
+    pub fn search_mods(
+        &self,
+        q: &crate::search::SearchQuery,
+    ) -> Result<crate::search::SearchResult> {
+        let index = self.session.read().unwrap().index.clone();
+        crate::search::search(&index, q)
+    }
+
     pub fn mod_detail(&self, id: ModId) -> Option<ModDetail> {
         let s = self.session.read().unwrap();
         let m = s.index.get(id)?;

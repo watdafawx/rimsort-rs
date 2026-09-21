@@ -268,6 +268,19 @@ async fn read_player_log(state: St<'_>, offset: Option<u32>) -> Cmd<LogChunk> {
 
 #[tauri::command]
 #[specta::specta]
+async fn search_mods(
+    state: St<'_>,
+    query: rimsort_core::search::SearchQuery,
+) -> Cmd<rimsort_core::search::SearchResult> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.search_mods(&query))
+        .await
+        .map_err(|e| rimsort_core::Error::Other(e.to_string()))?
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
     Ok(state.game_running())
 }
@@ -322,6 +335,7 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            search_mods,
             cancel_task
         ])
         .events(collect_events![TaskUpdate])

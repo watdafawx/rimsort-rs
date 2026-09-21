@@ -79,6 +79,7 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	searchMods: (query: SearchQuery) => typedError<SearchResult, ErrorDto>(__TAURI_INVOKE("search_mods", { query })),
 	cancelTask: (id: number) => typedError<null, ErrorDto>(__TAURI_INVOKE("cancel_task", { id })),
 };
 
@@ -303,6 +304,36 @@ export type SaveResult = {
 	path: string,
 	backup: string | null,
 	count: number,
+};
+
+export type SearchHit = {
+	mod_id: ModId,
+	mod_name: string,
+	/**  Absolute path of the file. */
+	path: string,
+	/**  Path relative to the mod folder. */
+	rel: string,
+	/**  1-based line; 0 for a file-name match. */
+	line: number,
+	text: string,
+};
+
+export type SearchQuery = {
+	text: string,
+	regex: boolean,
+	case_sensitive: boolean,
+	/**  Extensions to look in, without dots; empty means every (text) file. */
+	extensions: string[],
+	/**  Also match file names, not just contents. */
+	file_names: boolean,
+};
+
+export type SearchResult = {
+	hits: SearchHit[],
+	/**  Stopped early at the overall or per-mod hit cap. */
+	truncated: boolean,
+	files_searched: number,
+	ms: number,
 };
 
 export type SettingsView = {
