@@ -21,6 +21,9 @@ const KEY = 'rimsort-rs.lang'
 
 export const i18n = $state({ lang: 'en', dict: {} as Record<string, string> })
 
+/** Marks a string for extraction (`node scripts/i18n.mjs`) without translating it yet; pass the result to `t()` later. */
+export const T = <S extends string>(text: S): S => text
+
 /** Translate an English source string; `{name}` placeholders are filled from `params`. */
 export function t(text: string, params?: Record<string, string | number>): string {
   const s = i18n.dict[text] ?? text

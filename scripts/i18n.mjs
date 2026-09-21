@@ -10,7 +10,7 @@ const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.
 const files = walk(uiSrc).filter((f) => /\.(svelte|ts)$/.test(f) && !/\.test\.ts$/.test(f) && !f.endsWith('bindings.ts'))
 const used = new Set()
 for (const f of files) {
-  for (const m of fs.readFileSync(f, 'utf8').matchAll(/\bt\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g)) {
+  for (const m of fs.readFileSync(f, 'utf8').matchAll(/\b[tT]\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g)) {
     used.add(m[2].replace(/\\(['"`])/g, '$1'))
   }
 }

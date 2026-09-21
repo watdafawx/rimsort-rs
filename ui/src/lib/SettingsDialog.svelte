@@ -5,7 +5,7 @@
   import { openUrl } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { DbResult, Fix, InstanceDto } from '../bindings'
-  import { i18n, LANGS, setLanguage } from './i18n.svelte'
+  import { i18n, LANGS, setLanguage, t, T } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
   import { setTheme, theme, type ThemeMode } from './theme.svelte'
   import { RECENT_CHOICES, prefs, setRecentDays } from './prefs.svelte'
@@ -20,12 +20,12 @@
   let notes = $state<string[]>([])
   let newName = $state('')
   const TABS = [
-    ['locations', 'Locations'],
-    ['sorting', 'Sorting'],
-    ['appearance', 'Appearance'],
-    ['databases', 'Databases'],
-    ['maintenance', 'Maintenance'],
-    ['about', 'About'],
+    ['locations', T('Locations')],
+    ['sorting', T('Sorting')],
+    ['appearance', T('Appearance')],
+    ['databases', T('Databases')],
+    ['maintenance', T('Maintenance')],
+    ['about', T('About')],
   ] as const
   let tab = $state<(typeof TABS)[number][0]>('locations')
   let dbResults = $state<DbResult[]>([])
@@ -91,10 +91,10 @@
 
   type PathKey = 'game_folder' | 'config_folder' | 'local_folder' | 'workshop_folder'
   const FIELDS: [PathKey, string][] = [
-    ['game_folder', 'Game folder'],
-    ['config_folder', 'Config folder (ModsConfig.xml)'],
-    ['local_folder', 'Local mods folder'],
-    ['workshop_folder', 'Steam Workshop folder'],
+    ['game_folder', T('Game folder')],
+    ['config_folder', T('Config folder (ModsConfig.xml)')],
+    ['local_folder', T('Local mods folder')],
+    ['workshop_folder', T('Steam Workshop folder')],
   ]
 
   async function browse(key: PathKey) {
@@ -154,7 +154,7 @@
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
-    <h2>Settings</h2>
+    <h2>{t('Settings')}</h2>
     <div class="tabs" role="tablist">
       {#each TABS as [id, label] (id)}
         <button
@@ -163,14 +163,14 @@
           class:on={tab === id}
           onclick={() => (tab = id)}
         >
-          {label}
+          {t(label)}
         </button>
       {/each}
     </div>
 
     {#if tab === 'locations'}
       <div class="row">
-        <label for="inst">Instance</label>
+        <label for="inst">{t('Instance')}</label>
         <select
           id="inst"
           value={app.settings!.current_instance}
@@ -178,18 +178,19 @@
         >
           {#each app.settings!.instances as i (i.name)}<option>{i.name}</option>{/each}
         </select>
-        <button onclick={remove} disabled={app.settings!.instances.length < 2}>Delete</button>
-        <input placeholder="New instance name" bind:value={newName} />
-        <button onclick={create} disabled={!newName.trim()}>Create</button>
+        <button onclick={remove} disabled={app.settings!.instances.length < 2}>{t('Delete')}</button
+        >
+        <input placeholder={t('New instance name')} bind:value={newName} />
+        <button onclick={create} disabled={!newName.trim()}>{t('Create')}</button>
       </div>
 
       {#each FIELDS as [key, label] (key)}
         {@const check = app.settings!.checks.find((c) => c.kind === key.replace('_folder', ''))}
         <div class="field">
-          <label for={key}>{label}</label>
+          <label for={key}>{t(label)}</label>
           <div class="row">
             <input id={key} bind:value={draft[key]} spellcheck="false" />
-            <button onclick={() => browse(key)}>Browse…</button>
+            <button onclick={() => browse(key)}>{t('Browse…')}</button>
           </div>
           {#if check && !check.ok && check.path === draft[key]}<small class="bad"
               >{check.reason}</small
@@ -198,7 +199,7 @@
       {/each}
 
       <div class="field">
-        <label for="run_args">Game launch arguments</label>
+        <label for="run_args">{t('Game launch arguments')}</label>
         <input
           id="run_args"
           bind:value={draft.run_args}
@@ -206,61 +207,61 @@
           placeholder="-popupwindow"
         />
         <label class="check"
-          ><input type="checkbox" bind:checked={draft.launch_via_steam} /> Launch through Steam (arguments
-          are ignored)</label
+          ><input type="checkbox" bind:checked={draft.launch_via_steam} />
+          {t('Launch through Steam (arguments are ignored)')}</label
         >
       </div>
 
       <div class="row">
-        <button onclick={detect}>Auto-detect</button>
+        <button onclick={detect}>{t('Auto-detect')}</button>
         <span class="dim">{notes.join(' · ')}</span>
       </div>
     {/if}
 
     {#if tab === 'sorting'}
       <fieldset>
-        <legend>Sorting &amp; validation</legend>
+        <legend>{t('Sorting & validation')}</legend>
         <div class="row">
-          <label for="sort-algo">Sorting algorithm</label>
+          <label for="sort-algo">{t('Sorting algorithm')}</label>
           <select
             id="sort-algo"
             value={opts.alphabetical_sort ? 'alpha' : 'topo'}
             onchange={(e) => (opts.alphabetical_sort = e.currentTarget.value === 'alpha')}
           >
-            <option value="topo">Topological (recommended)</option>
-            <option value="alpha">Alphabetical (deprecated in RimSort)</option>
+            <option value="topo">{t('Topological (recommended)')}</option>
+            <option value="alpha">{t('Alphabetical (deprecated in RimSort)')}</option>
           </select>
         </div>
         <label class="check"
-          ><input type="checkbox" bind:checked={opts.dependencies_as_load_after} /> Treat declared dependencies
-          as “load after” when sorting</label
+          ><input type="checkbox" bind:checked={opts.dependencies_as_load_after} />
+          {t('Treat declared dependencies as “load after” when sorting')}</label
         >
         <label class="check"
-          ><input type="checkbox" bind:checked={opts.use_alternative_ids} /> Alternative package ids satisfy
-          a dependency</label
+          ><input type="checkbox" bind:checked={opts.use_alternative_ids} />
+          {t('Alternative package ids satisfy a dependency')}</label
         >
         <label class="check"
-          ><input type="checkbox" bind:checked={opts.prefer_versioned} /> Prefer version-specific About.xml
-          entries (needs rescan)</label
+          ><input type="checkbox" bind:checked={opts.prefer_versioned} />
+          {t('Prefer version-specific About.xml entries (needs rescan)')}</label
         >
       </fieldset>
     {/if}
 
     {#if tab === 'appearance'}
       <fieldset>
-        <legend>Appearance</legend>
+        <legend>{t('Appearance')}</legend>
         <div class="row">
-          <label for="theme-select">Theme</label>
+          <label for="theme-select">{t('Theme')}</label>
           <select
             id="theme-select"
             value={theme.mode}
             onchange={(e) => setTheme(e.currentTarget.value as ThemeMode)}
           >
-            <option value="auto">Match system</option>
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
+            <option value="auto">{t('Match system')}</option>
+            <option value="dark">{t('Dark')}</option>
+            <option value="light">{t('Light')}</option>
           </select>
-          <label for="lang-select">Language</label>
+          <label for="lang-select">{t('Language')}</label>
           <select
             id="lang-select"
             value={i18n.lang}
@@ -270,7 +271,7 @@
           </select>
         </div>
         <div class="row">
-          <label for="zoom-select">Interface size</label>
+          <label for="zoom-select">{t('Interface size')}</label>
           <select
             id="zoom-select"
             value={zoom.level}
@@ -281,14 +282,20 @@
           <span class="dim">Ctrl + / Ctrl − / Ctrl 0</span>
         </div>
         <div class="row">
-          <label for="recent-select">Mark recently changed mods</label>
+          <label for="recent-select">{t('Mark recently changed mods')}</label>
           <select
             id="recent-select"
             value={prefs.recentDays}
             onchange={(e) => setRecentDays(Number(e.currentTarget.value))}
           >
             {#each RECENT_CHOICES as d (d)}
-              <option value={d}>{d === 0 ? 'Off' : `Last ${d} day${d === 1 ? '' : 's'}`}</option>
+              <option value={d}
+                >{d === 0
+                  ? t('Off')
+                  : d === 1
+                    ? t('Last day')
+                    : t('Last {n} days', { n: d })}</option
+              >
             {/each}
           </select>
         </div>
@@ -297,13 +304,15 @@
 
     {#if tab === 'databases'}
       <fieldset>
-        <legend>Rule databases</legend>
+        <legend>{t('Rule databases')}</legend>
         <div class="row">
           <button onclick={updateDbs} disabled={dbBusy}
-            >{dbBusy ? 'Updating…' : 'Update databases'}</button
+            >{dbBusy ? t('Updating…') : t('Update databases')}</button
           >
           <span class="dim"
-            >Community rules, Use This Instead, No Version Warning. Applied on the next rescan.</span
+            >{t(
+              'Community rules, Use This Instead, No Version Warning. Applied on the next rescan.',
+            )}</span
           >
         </div>
         {#each dbResults as r (r.name)}
@@ -311,10 +320,10 @@
             <strong>{r.name}</strong>
             <span
               >{r.status === 'Updated'
-                ? 'updated'
+                ? t('updated')
                 : r.status === 'NotModified'
-                  ? 'already up to date'
-                  : 'failed'} — {r.detail}</span
+                  ? t('already up to date')
+                  : t('failed')} — {r.detail}</span
             >
           </div>
         {/each}
@@ -369,8 +378,8 @@
     {/if}
 
     <footer>
-      <button onclick={onclose}>Cancel</button>
-      <button class="primary" onclick={saveAndRescan}>Save &amp; rescan</button>
+      <button onclick={onclose}>{t('Cancel')}</button>
+      <button class="primary" onclick={saveAndRescan}>{t('Save & rescan')}</button>
     </footer>
   </div>
 </div>
