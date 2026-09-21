@@ -1027,7 +1027,11 @@ Total # of mods: {}
             put(s, "todds_overwrite", o.overwrite.into());
             put(s, "todds_custom_command", o.custom_command.clone().into());
             put(s, "todds_active_mods_target", o.active_mods_target.into());
-            put(s, "auto_run_todds_before_launch", o.auto_before_launch.into());
+            put(
+                s,
+                "auto_run_todds_before_launch",
+                o.auto_before_launch.into(),
+            );
             Ok(())
         })
     }

@@ -28,3 +28,18 @@ Commands return `Result<T, ErrorDto>` (`{kind, message}`); wrap calls in `call()
 ## IDs
 
 `ModId` = uuid5 of the mod folder path: stable across scans; UI lists refer to mods by id and fetch detail lazily.
+
+## Core modules
+
+| Module | What it does |
+|---|---|
+| `mods`, `xml`, `steamacf` | Parallel scan and tolerant About.xml parsing; Steam manifest update times |
+| `sort`, `validate`, `rules` | Tiered topological (and legacy alphabetical) sort; warnings; community/user rules |
+| `modsconfig`, `modlist_io` | ModsConfig.xml read/write with 20 timestamped backups; RimSort/other list formats |
+| `steamcmd`, `gitmods`, `todds` | External tools run as cancellable tasks. SteamCMD and todds are downloaded on demand into the data folder |
+| `steamdb`, `dbupdate` | RimSort's Steam Workshop database (package id → Workshop id, unambiguous matches only); ETag database downloads |
+| `search` | Parallel, capped search inside mod folders |
+| `troubleshoot` | Config/cache resets; everything goes to the Recycle Bin, `ModsConfig.xml` is never touched |
+| `launch` | Game launch, running-game detection (`sysinfo`) |
+
+External processes never block the UI: they run inside a task, stream output into `ctx.progress`, and are killed when the task is cancelled.
