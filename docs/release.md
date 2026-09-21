@@ -25,3 +25,8 @@ packages listed in `.github/workflows/ci.yml` on Linux.
 
 `release.yml` and `ci.yml` have not run yet (no remote). First run may need small fixes (runner images, macOS
 target setup).
+
+## Verified locally (Windows)
+
+`cargo tauri build --no-bundle` (release exe ≈ 20 MB, ~5 min cold) and `cargo tauri build --bundles nsis`
+(installer ≈ 5.4 MB) both succeed. Release builds are warning-free (`cargo clippy --release -p rimsort-rs`).
