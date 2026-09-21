@@ -321,6 +321,53 @@ async fn run_todds(state: St<'_>, options: rimsort_core::todds::ToddsOptions) ->
     Ok(state.inner().run_todds(options)?)
 }
 
+/// Folders the UI can open in the system file manager.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
+enum FolderKind {
+    Game,
+    Config,
+    Local,
+    Workshop,
+    Data,
+    Logs,
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn open_folder(app: AppHandle, state: St<'_>, kind: FolderKind) -> Cmd<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let view = state.settings_view();
+    let inst = view
+        .instances
+        .iter()
+        .find(|i| i.name == view.current_instance);
+    let path = match kind {
+        FolderKind::Data => rimsort_core::settings::data_dir(),
+        FolderKind::Logs => {
+            log_dir_of(&app).map_err(|e| rimsort_core::Error::Other(e.to_string()))?
+        }
+        _ => {
+            let inst =
+                inst.ok_or_else(|| rimsort_core::Error::Other("No instance configured".into()))?;
+            PathBuf::from(match kind {
+                FolderKind::Game => &inst.game_folder,
+                FolderKind::Config => &inst.config_folder,
+                FolderKind::Local => &inst.local_folder,
+                _ => &inst.workshop_folder,
+            })
+        }
+    };
+    if !path.is_dir() {
+        return Err(
+            rimsort_core::Error::Other(format!("Folder not found: {}", path.display())).into(),
+        );
+    }
+    app.opener()
+        .open_path(path.to_string_lossy(), None::<&str>)
+        .map_err(|e| rimsort_core::Error::Other(e.to_string()))?;
+    Ok(())
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
@@ -377,6 +424,7 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            open_folder,
             get_todds_options,
             set_todds_options,
             run_todds,
@@ -391,6 +439,10 @@ fn builder() -> Builder<Wry> {
 
 /// Debug builds log to `<repo>/debug/logs` (readable by dev tooling); release to the app log dir.
 fn log_dir(app: &tauri::App) -> tauri::Result<PathBuf> {
+    log_dir_of(app.handle())
+}
+
+fn log_dir_of(app: &AppHandle) -> tauri::Result<PathBuf> {
     if cfg!(debug_assertions) {
         Ok(PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),

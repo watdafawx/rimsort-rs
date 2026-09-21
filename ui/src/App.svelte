@@ -8,7 +8,7 @@
   import Icon from './lib/Icon.svelte'
   import { initLanguage, t } from './lib/i18n.svelte'
   import { initTheme } from './lib/theme.svelte'
-  import type { ExportFormat, ModDetail, ModRow, WorkshopMatch } from './bindings'
+  import type { ExportFormat, FolderKind, ModDetail, ModRow, WorkshopMatch } from './bindings'
   import {
     call,
     commands,
@@ -53,6 +53,14 @@
 
   let showSettings = $state(false)
   let detail = $state<ModDetail | null>(null)
+  const FOLDERS: [FolderKind, string][] = [
+    ['Game', 'RimWorld folder'],
+    ['Config', 'Config folder (ModsConfig.xml)'],
+    ['Local', 'Local mods'],
+    ['Workshop', 'Steam Workshop mods'],
+    ['Data', 'RimSort-rs data'],
+    ['Logs', 'RimSort-rs logs'],
+  ]
   let showMissing = $state(false)
   let missingMatches = $state<WorkshopMatch[]>([])
   async function toggleMissing() {
@@ -61,6 +69,7 @@
       missingMatches = await call(commands.workshopMatches($state.snapshot(app.missing)))
   }
   let listMenu = $state(false)
+  let foldersMenu = $state(false)
   let showDeps = $state(false)
   let showDups = $state(false)
   let showDownload = $state(false)
@@ -256,9 +265,14 @@
   onclick={() => {
     menu = null
     listMenu = false
+    foldersMenu = false
   }}
   onkeydown={(e) => {
-    if (e.key === 'Escape') menu = null
+    if (e.key === 'Escape') {
+      menu = null
+      listMenu = false
+      foldersMenu = false
+    }
     if ((e.ctrlKey || e.metaKey) && !(e.target instanceof HTMLInputElement)) {
       const k = e.key.toLowerCase()
       if (k === 'z' && !e.shiftKey) undo()
@@ -320,6 +334,7 @@
           disabled={!app.loaded}
           onclick={(e) => {
             e.stopPropagation()
+            foldersMenu = false
             listMenu = !listMenu
           }}><Icon name="list" />{t('List')}<Icon name="chevron" size={14} /></button
         >
@@ -411,6 +426,32 @@
       </button>
     </div>
     <span class="spacer"></span>
+    <div class="dropdown">
+      <button
+        id="foldersmenu"
+        class="ghost"
+        aria-haspopup="menu"
+        aria-expanded={foldersMenu}
+        onclick={(e) => {
+          e.stopPropagation()
+          listMenu = false
+          foldersMenu = !foldersMenu
+        }}><Icon name="folder" />{t('Folders')}<Icon name="chevron" size={14} /></button
+      >
+      {#if foldersMenu}
+        <div
+          class="menu"
+          role="menu"
+          style:position="absolute"
+          style:top="calc(100% + 4px)"
+          style:right="0"
+        >
+          {#each FOLDERS as [kind, label] (kind)}
+            <button role="menuitem" onclick={() => call(commands.openFolder(kind))}>{label}</button>
+          {/each}
+        </div>
+      {/if}
+    </div>
     {#if app.dirty}
       <span class="dirty" title="Changes not yet written to ModsConfig.xml"
         ><Icon name="dot" size={22} />{t('unsaved')}</span

@@ -79,6 +79,7 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	openFolder: (kind: FolderKind) => typedError<null, ErrorDto>(__TAURI_INVOKE("open_folder", { kind })),
 	getToddsOptions: () => typedError<ToddsOptions, ErrorDto>(__TAURI_INVOKE("get_todds_options")),
 	setToddsOptions: (options: ToddsOptions) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_todds_options", { options })),
 	runTodds: (options: ToddsOptions) => typedError<number, ErrorDto>(__TAURI_INVOKE("run_todds", { options })),
@@ -166,6 +167,9 @@ export type Fix =
 "GameSettings" | 
 /**  Steam's half-finished Workshop downloads (`workshop/downloads`). */
 "SteamDownloadCache";
+
+/**  Folders the UI can open in the system file manager. */
+export type FolderKind = "Game" | "Config" | "Local" | "Workshop" | "Data" | "Logs";
 
 export type ImportResult = {
 	/**  Entries resolved to installed mods and now active. */
