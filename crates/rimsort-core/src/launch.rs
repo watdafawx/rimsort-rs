@@ -72,8 +72,31 @@ pub fn launch(inst: &Instance) -> Result<()> {
     Ok(())
 }
 
+/// Whether a RimWorld process is running (RimWorld rewrites ModsConfig.xml when it exits).
+pub fn game_running() -> bool {
+    use sysinfo::{ProcessesToUpdate, System};
+    let mut sys = System::new();
+    sys.refresh_processes(ProcessesToUpdate::All, true);
+    sys.processes()
+        .values()
+        .any(|p| is_game_process(&p.name().to_string_lossy()))
+}
+
+fn is_game_process(name: &str) -> bool {
+    ["rimworldwin64", "rimworldlinux", "rimworldmac"]
+        .iter()
+        .any(|n| name.to_ascii_lowercase().starts_with(n))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn recognises_game_process_names() {
+        assert!(super::is_game_process("RimWorldWin64.exe"));
+        assert!(super::is_game_process("RimWorldLinux"));
+        assert!(!super::is_game_process("RimSort-rs.exe"));
+    }
+
     #[test]
     fn splits_quotes() {
         assert_eq!(

@@ -208,7 +208,22 @@
     await refresh()
   }
 
+  async function trySave() {
+    if (
+      (await call(commands.gameRunning())) &&
+      !confirm(
+        'RimWorld is running. It rewrites ModsConfig.xml when it closes, which would undo this save. Save anyway?',
+      )
+    )
+      return
+    await save()
+  }
+
   async function run() {
+    if (await call(commands.gameRunning())) {
+      toast('RimWorld is already running', 3000)
+      return
+    }
     if (
       app.dirty &&
       !confirm('You have unsaved changes; RimWorld will use the last saved list. Launch anyway?')
@@ -238,6 +253,10 @@
       const k = e.key.toLowerCase()
       if (k === 'z' && !e.shiftKey) undo()
       else if (k === 'y' || (k === 'z' && e.shiftKey)) redo()
+      else if (k === 's') {
+        e.preventDefault()
+        if (app.dirty) void trySave()
+      }
     }
   }}
   oncontextmenu={(e) =>
@@ -269,7 +288,7 @@
       <button
         id="save"
         class="primary"
-        onclick={save}
+        onclick={trySave}
         disabled={!app.loaded}
         title="Write ModsConfig.xml (Ctrl+S)"
       >

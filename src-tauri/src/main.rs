@@ -268,6 +268,12 @@ async fn read_player_log(state: St<'_>, offset: Option<u32>) -> Cmd<LogChunk> {
 
 #[tauri::command]
 #[specta::specta]
+async fn game_running(state: St<'_>) -> Cmd<bool> {
+    Ok(state.game_running())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn launch_game(state: St<'_>) -> Cmd<()> {
     Ok(state.launch_game()?)
 }
@@ -315,6 +321,7 @@ fn builder() -> Builder<Wry> {
             export_modlist_text,
             read_player_log,
             launch_game,
+            game_running,
             cancel_task
         ])
         .events(collect_events![TaskUpdate])

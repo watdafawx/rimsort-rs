@@ -939,6 +939,10 @@ Total # of mods: {}
         meta::save(&s.meta_path, &s.meta)
     }
 
+    pub fn game_running(&self) -> bool {
+        crate::launch::game_running()
+    }
+
     pub fn launch_game(&self) -> Result<()> {
         crate::launch::launch(&self.current_instance()?)
     }

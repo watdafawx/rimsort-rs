@@ -78,6 +78,7 @@ export const commands = {
 	exportModlistText: (format: ExportFormat) => typedError<string, ErrorDto>(__TAURI_INVOKE("export_modlist_text", { format })),
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
+	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
 	cancelTask: (id: number) => typedError<null, ErrorDto>(__TAURI_INVOKE("cancel_task", { id })),
 };
 
