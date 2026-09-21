@@ -89,6 +89,7 @@ export const commands = {
 	/**  Subscribe to (or unsubscribe from) Workshop items in the Steam client. */
 	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
 	steamSubscribedIds: () => typedError<string[], ErrorDto>(__TAURI_INVOKE("steam_subscribed_ids")),
+	folderSize: (id: ModId) => typedError<number | null, ErrorDto>(__TAURI_INVOKE("folder_size", { id })),
 	latestSave: () => typedError<{
 	/**  File name without extension. */
 	name: string,

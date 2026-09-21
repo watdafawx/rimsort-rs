@@ -4,7 +4,7 @@
   import { getCurrentWindow } from '@tauri-apps/api/window'
   import { open as pickFile, save as pickSave } from '@tauri-apps/plugin-dialog'
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import Icon from './lib/Icon.svelte'
   import { initLanguage, t, T } from './lib/i18n.svelte'
   import { initTheme } from './lib/theme.svelte'
@@ -235,9 +235,44 @@
     void openUrl(a.getAttribute('href')!)
   }
 
+  /** Folder size of the selected mod, computed lazily (null while walking the folder). */
+  let folderSize = $state<number | null>(null)
   async function select(row: ModRow) {
     detail = await call(commands.getMod(row.id))
+    folderSize = null
+    const id = row.id
+    call(commands.folderSize(id)).then(
+      (n) => {
+        if (detail?.id === id) folderSize = n
+      },
+      () => {},
+    )
   }
+
+  const fmtBytes = (n: number) =>
+    n < 1024
+      ? `${n} B`
+      : n < 1024 ** 2
+        ? `${(n / 1024).toFixed(0)} KB`
+        : n < 1024 ** 3
+          ? `${(n / 1024 ** 2).toFixed(1)} MB`
+          : `${(n / 1024 ** 3).toFixed(2)} GB`
+
+  /**
+   * Mods or ModsConfig.xml changed on disk: rescan right away (keeping unsaved list edits). Waits for a
+   * running scan/job and re-runs when it ends. A changed ModsConfig.xml with unsaved edits still asks first.
+   */
+  const promptOnly = $derived(
+    !!external.changed && (!prefs.autoRefresh || (external.changed === 'config' && app.dirty)),
+  )
+  $effect(() => {
+    const what = external.changed
+    if (!what || promptOnly || !app.loaded || app.scanning || app.jobTask) return
+    untrack(() => {
+      toast(t('Rescanned — mods changed on disk'), 2500)
+      void refresh(app.dirty)
+    })
+  })
 
   async function switchInstance(name: string) {
     if (app.dirty && !confirm(t('Discard unsaved changes?'))) return
@@ -518,7 +553,7 @@
     </button>
   </header>
 
-  {#if external.changed}
+  {#if promptOnly}
     <div class="banner external">
       {external.changed === 'config'
         ? t('ModsConfig.xml was changed outside RimSort-rs.')
@@ -602,6 +637,8 @@
               {t('Added')}
             </dt>
             <dd>{new Date(detail.added * 1000).toLocaleDateString()}</dd>{/if}
+          {#if folderSize != null}<dt>{t('Size')}</dt>
+            <dd>{fmtBytes(folderSize)}</dd>{/if}
           {#if detail.workshop_updated}<dt>{t('Updated')}</dt>
             <dd>{new Date(detail.workshop_updated * 1000).toLocaleDateString()}</dd>{/if}
           {#if detail.startup_ms != null}<dt title="Load time measured by the Loading Progress mod">

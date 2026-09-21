@@ -318,6 +318,14 @@
         <label class="check"
           ><input
             type="checkbox"
+            checked={prefs.autoRefresh}
+            onchange={(e) => setPref('autoRefresh', e.currentTarget.checked)}
+          />
+          {t('Rescan automatically when mods change on disk')}</label
+        >
+        <label class="check"
+          ><input
+            type="checkbox"
             checked={prefs.saveMarks}
             onchange={(e) => setPref('saveMarks', e.currentTarget.checked)}
           />

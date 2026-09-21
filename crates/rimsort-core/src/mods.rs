@@ -308,6 +308,24 @@ fn has_assemblies(root: &Path) -> bool {
         })
 }
 
+/// Total size in bytes of every file under `root` (symlinks are not followed). Lazy: called for the
+/// selected mod only, never during a scan.
+pub fn dir_size(root: &Path) -> u64 {
+    let mut total = 0;
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(rd) = fs::read_dir(&dir) else { continue };
+        for e in rd.flatten() {
+            match e.file_type() {
+                Ok(t) if t.is_dir() => stack.push(e.path()),
+                Ok(t) if t.is_file() => total += e.metadata().map_or(0, |m| m.len()),
+                _ => {}
+            }
+        }
+    }
+    total
+}
+
 /// Parse one mod directory. Never fails: bad mods come back `valid == false` with a reason.
 fn parse_mod(path: &Path, source: Source, cfg: &ScanConfig) -> Mod {
     let folder = path
@@ -667,5 +685,17 @@ mod tests {
         let m = parse_mod(&p, Source::Workshop, &cfg("1.6"));
         assert_eq!(m.published_file_id.as_deref(), Some("12345"));
         assert_eq!(m.mod_type, ModType::SteamWorkshop);
+    }
+
+    #[test]
+    fn dir_size_sums_nested_files() {
+        let d = std::env::temp_dir().join(format!("rs-size-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(d.join("a/b")).unwrap();
+        fs::write(d.join("x"), [0u8; 10]).unwrap();
+        fs::write(d.join("a/b/y"), [0u8; 32]).unwrap();
+        assert_eq!(dir_size(&d), 42);
+        assert_eq!(dir_size(&d.join("missing")), 0);
+        let _ = fs::remove_dir_all(&d);
     }
 }

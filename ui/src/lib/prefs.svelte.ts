@@ -12,12 +12,14 @@ export const prefs = $state({
   typeIcons: true,
   /** "New" marker on mods missing from the latest save (and "in save" on inactive ones). */
   saveMarks: true,
+  /** Rescan by itself when mods or ModsConfig.xml change on disk. */
+  autoRefresh: true,
 })
 
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
   if (RECENT_CHOICES.includes(saved.recentDays)) prefs.recentDays = saved.recentDays
-  for (const k of ['sourceIcons', 'typeIcons', 'saveMarks'] as const) {
+  for (const k of ['sourceIcons', 'typeIcons', 'saveMarks', 'autoRefresh'] as const) {
     if (typeof saved[k] === 'boolean') prefs[k] = saved[k]
   }
 } catch {
@@ -37,7 +39,10 @@ export function setRecentDays(days: number) {
   persist()
 }
 
-export function setPref(key: 'sourceIcons' | 'typeIcons' | 'saveMarks', on: boolean) {
+export function setPref(
+  key: 'sourceIcons' | 'typeIcons' | 'saveMarks' | 'autoRefresh',
+  on: boolean,
+) {
   prefs[key] = on
   persist()
 }

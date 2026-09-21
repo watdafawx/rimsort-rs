@@ -381,6 +381,15 @@ async fn latest_save(state: St<'_>) -> Cmd<Option<rimsort_core::saves::SaveInfo>
 
 #[tauri::command]
 #[specta::specta]
+async fn folder_size(state: St<'_>, id: ModId) -> Cmd<Option<f64>> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.folder_size(id).map(|n| n as f64))
+        .await
+        .map_err(|e| rimsort_core::Error::Other(e.to_string()).into())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn steam_subscribed_ids() -> Cmd<Vec<String>> {
     tauri::async_runtime::spawn_blocking(steam::subscribed_ids)
         .await
@@ -456,6 +465,7 @@ fn builder() -> Builder<Wry> {
             game_running,
             steam_set_subscribed,
             steam_subscribed_ids,
+            folder_size,
             latest_save,
             open_folder,
             get_todds_options,

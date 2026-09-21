@@ -1113,6 +1113,12 @@ Total # of mods: {}
         Ok(crate::troubleshoot::apply(&self.current_instance()?, fix)? as u32)
     }
 
+    /// Folder size of a mod in bytes (walks the folder; call off the UI thread).
+    pub fn folder_size(&self, id: ModId) -> Option<u64> {
+        let path = self.session.read().unwrap().index.get(id)?.path.clone();
+        Some(mods::dir_size(&path))
+    }
+
     /// The mods of the newest save game, if there is one with a mod list.
     pub fn latest_save(&self) -> Option<crate::saves::SaveInfo> {
         let config = self.current_instance().ok()?.config_folder;
