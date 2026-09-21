@@ -22,6 +22,7 @@ mod state;
 pub mod steamacf;
 pub mod steamcmd;
 mod task;
+pub mod troubleshoot;
 pub mod validate;
 pub mod watch;
 mod xml;

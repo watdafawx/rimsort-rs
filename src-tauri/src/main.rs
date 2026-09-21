@@ -281,6 +281,21 @@ async fn search_mods(
 
 #[tauri::command]
 #[specta::specta]
+async fn troubleshoot_preview(
+    state: St<'_>,
+    fix: rimsort_core::troubleshoot::Fix,
+) -> Cmd<Vec<String>> {
+    Ok(state.troubleshoot_preview(fix)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn troubleshoot_apply(state: St<'_>, fix: rimsort_core::troubleshoot::Fix) -> Cmd<u32> {
+    Ok(state.troubleshoot_apply(fix)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
     Ok(state.game_running())
 }
@@ -335,6 +350,8 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            troubleshoot_preview,
+            troubleshoot_apply,
             search_mods,
             cancel_task
         ])

@@ -79,6 +79,8 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	troubleshootPreview: (fix: Fix) => typedError<string[], ErrorDto>(__TAURI_INVOKE("troubleshoot_preview", { fix })),
+	troubleshootApply: (fix: Fix) => typedError<number, ErrorDto>(__TAURI_INVOKE("troubleshoot_apply", { fix })),
 	searchMods: (query: SearchQuery) => typedError<SearchResult, ErrorDto>(__TAURI_INVOKE("search_mods", { query })),
 	cancelTask: (id: number) => typedError<null, ErrorDto>(__TAURI_INVOKE("cancel_task", { id })),
 };
@@ -152,6 +154,14 @@ export type ExportFormat =
 "PackageIds" | 
 /**  Human-readable `Name [package.id][url]` report. */
 "Report";
+
+export type Fix = 
+/**  `Config/Mod_*.xml`: per-mod settings written by the game. */
+"ModSettings" | 
+/**  `Prefs.xml` and `KeyPrefs.xml`. */
+"GameSettings" | 
+/**  Steam's half-finished Workshop downloads (`workshop/downloads`). */
+"SteamDownloadCache";
 
 export type ImportResult = {
 	/**  Entries resolved to installed mods and now active. */

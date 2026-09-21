@@ -1,7 +1,8 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
   import { open } from '@tauri-apps/plugin-dialog'
-  import type { DbResult, InstanceDto } from '../bindings'
+  import { openUrl } from '@tauri-apps/plugin-opener'
+  import type { DbResult, Fix, InstanceDto } from '../bindings'
   import { i18n, LANGS, setLanguage } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
   import { setTheme, theme, type ThemeMode } from './theme.svelte'
@@ -19,6 +20,7 @@
     ['sorting', 'Sorting'],
     ['appearance', 'Appearance'],
     ['databases', 'Databases'],
+    ['maintenance', 'Maintenance'],
   ] as const
   let tab = $state<(typeof TABS)[number][0]>('locations')
   let dbResults = $state<DbResult[]>([])
@@ -33,6 +35,38 @@
     }
   }
   let opts = $state({ ...app.settings!.options })
+
+  const FIXES: { fix: Fix; title: string; help: string }[] = [
+    {
+      fix: 'ModSettings',
+      title: 'Reset mod settings',
+      help: 'Moves the per-mod settings files (Config/Mod_*.xml) to the Recycle Bin. Mods start with their defaults; your load order is untouched.',
+    },
+    {
+      fix: 'GameSettings',
+      title: 'Reset game settings',
+      help: 'Moves Prefs.xml and KeyPrefs.xml (graphics, volume, key bindings) to the Recycle Bin. ModsConfig.xml is never touched.',
+    },
+    {
+      fix: 'SteamDownloadCache',
+      title: 'Clear Steam download cache',
+      help: 'Moves Steam’s unfinished Workshop downloads to the Recycle Bin — fixes mods stuck on “updating”.',
+    },
+  ]
+
+  async function runFix(f: (typeof FIXES)[number]) {
+    const files = await call(commands.troubleshootPreview(f.fix))
+    if (!files.length) {
+      toast('Nothing to clear', 2500)
+      return
+    }
+    const shown = files.slice(0, 8).map((p) => p.split(/[/\\]/).pop())
+    if (files.length > shown.length) shown.push(`…and ${files.length - shown.length} more`)
+    const question = `${f.title}: move ${files.length} item(s) to the Recycle Bin?`
+    if (!confirm([question, '', ...shown].join('\n'))) return
+    const n = await call(commands.troubleshootApply(f.fix))
+    toast(`Moved ${n} item(s) to the Recycle Bin`, 3500)
+  }
 
   type PathKey = 'game_folder' | 'config_folder' | 'local_folder' | 'workshop_folder'
   const FIELDS: [PathKey, string][] = [
@@ -243,6 +277,28 @@
       </fieldset>
     {/if}
 
+    {#if tab === 'maintenance'}
+      <fieldset>
+        <legend>Troubleshooting</legend>
+        {#each FIXES as f (f.fix)}
+          <div class="fix">
+            <div>
+              <strong>{f.title}</strong>
+              <p class="dim">{f.help}</p>
+            </div>
+            <button onclick={() => runFix(f)}>Review…</button>
+          </div>
+        {/each}
+        <div class="fix">
+          <div>
+            <strong>Verify game files</strong>
+            <p class="dim">Asks Steam to check and repair the RimWorld installation.</p>
+          </div>
+          <button onclick={() => openUrl('steam://validate/294100')}>Open in Steam</button>
+        </div>
+      </fieldset>
+    {/if}
+
     <footer>
       <button onclick={onclose}>Cancel</button>
       <button class="primary" onclick={saveAndRescan}>Save &amp; rescan</button>
@@ -281,6 +337,19 @@
     width: min(720px, 92vw);
   }
 
+  .fix {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+  }
+  .fix + .fix {
+    border-top: 1px solid var(--line);
+  }
+  .fix p {
+    margin: 0.1rem 0 0;
+  }
   .row {
     display: flex;
     gap: 0.5rem;

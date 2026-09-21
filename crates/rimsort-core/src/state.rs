@@ -948,6 +948,18 @@ Total # of mods: {}
         meta::save(&s.meta_path, &s.meta)
     }
 
+    pub fn troubleshoot_preview(&self, fix: crate::troubleshoot::Fix) -> Result<Vec<String>> {
+        let files = crate::troubleshoot::preview(&self.current_instance()?, fix)?;
+        Ok(files
+            .iter()
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect())
+    }
+
+    pub fn troubleshoot_apply(&self, fix: crate::troubleshoot::Fix) -> Result<u32> {
+        Ok(crate::troubleshoot::apply(&self.current_instance()?, fix)? as u32)
+    }
+
     pub fn game_running(&self) -> bool {
         crate::launch::game_running()
     }
