@@ -305,6 +305,24 @@ async fn workshop_matches(
 
 #[tauri::command]
 #[specta::specta]
+async fn get_todds_options(state: St<'_>) -> Cmd<rimsort_core::todds::ToddsOptions> {
+    Ok(state.todds_options())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_todds_options(state: St<'_>, options: rimsort_core::todds::ToddsOptions) -> Cmd<()> {
+    Ok(state.set_todds_options(options)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn run_todds(state: St<'_>, options: rimsort_core::todds::ToddsOptions) -> Cmd<TaskId> {
+    Ok(state.inner().run_todds(options)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
     Ok(state.game_running())
 }
@@ -359,6 +377,9 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            get_todds_options,
+            set_todds_options,
+            run_todds,
             workshop_matches,
             troubleshoot_preview,
             troubleshoot_apply,

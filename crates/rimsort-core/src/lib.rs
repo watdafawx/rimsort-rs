@@ -23,6 +23,7 @@ pub mod steamacf;
 pub mod steamcmd;
 pub mod steamdb;
 mod task;
+pub mod todds;
 pub mod troubleshoot;
 pub mod validate;
 pub mod watch;

@@ -79,6 +79,9 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	getToddsOptions: () => typedError<ToddsOptions, ErrorDto>(__TAURI_INVOKE("get_todds_options")),
+	setToddsOptions: (options: ToddsOptions) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_todds_options", { options })),
+	runTodds: (options: ToddsOptions) => typedError<number, ErrorDto>(__TAURI_INVOKE("run_todds", { options })),
 	workshopMatches: (packageIds: string[]) => typedError<WorkshopMatch[], ErrorDto>(__TAURI_INVOKE("workshop_matches", { packageIds })),
 	troubleshootPreview: (fix: Fix) => typedError<string[], ErrorDto>(__TAURI_INVOKE("troubleshoot_preview", { fix })),
 	troubleshootApply: (fix: Fix) => typedError<number, ErrorDto>(__TAURI_INVOKE("troubleshoot_apply", { fix })),
@@ -311,6 +314,14 @@ export type PathCheck = {
 	reason: string,
 };
 
+export type Preset = 
+/**  BC1 / BC7 with mipmaps: what RimSort recommends. */
+"Optimized" | 
+/**  Delete the `.dds` files todds would create. */
+"Clean" | 
+/**  The user's own arguments. */
+"Custom";
+
 export type SaveResult = {
 	path: string,
 	backup: string | null,
@@ -371,6 +382,15 @@ export type TaskEvent = { kind: "progress"; id: number; done: number; total: num
 
 /**  Emitted for every task state change (`task://` in the plan; one typed event carrying a tagged enum). */
 export type TaskUpdate = TaskEvent;
+
+export type ToddsOptions = {
+	preset: Preset,
+	dry_run: boolean,
+	overwrite: boolean,
+	custom_command: string,
+	/**  Only the active mods; otherwise every mod in the local and Workshop folders. */
+	active_mods_target: boolean,
+};
 
 /**  User-editable rules for one mod (stored in `userRules.json`). */
 export type UserRuleDto = {

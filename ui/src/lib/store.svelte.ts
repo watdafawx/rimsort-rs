@@ -1,4 +1,11 @@
-import { commands, type CycleDto, type ModRow, type SettingsView, type Warning } from '../bindings'
+import {
+  commands,
+  type CycleDto,
+  type ModRow,
+  type SettingsView,
+  type ToddsOptions,
+  type Warning,
+} from '../bindings'
 import { call, external, toast, waitTask } from './ipc.svelte'
 
 export const app = $state({
@@ -276,6 +283,12 @@ export async function downloadMods(ids: string[]) {
     call(commands.downloadMods(ids)),
     `Downloaded ${ids.length} mod${ids.length === 1 ? '' : 's'}`,
   )
+}
+
+/** Run todds (texture optimizer / clean-up) as a background job. */
+export async function runTodds(options: ToddsOptions, doneText: string) {
+  if (app.jobTask) return toast('A background job is already running')
+  await runJob(call(commands.runTodds(options)), doneText)
 }
 
 /** Copy a (Workshop) mod into the local mods folder. */

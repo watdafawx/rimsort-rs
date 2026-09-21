@@ -23,6 +23,7 @@
   import ConfirmDelete from './lib/ConfirmDelete.svelte'
   import DownloadDialog from './lib/DownloadDialog.svelte'
   import SearchDialog from './lib/SearchDialog.svelte'
+  import ToddsDialog from './lib/ToddsDialog.svelte'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MetaEditor from './lib/MetaEditor.svelte'
@@ -64,6 +65,7 @@
   let showDups = $state(false)
   let showDownload = $state(false)
   let showSearch = $state(false)
+  let showTodds = $state(false)
   let showBackups = $state(false)
   let deleting = $state<ModDetail | null>(null)
   let editRuleId = $state<string | null>(null)
@@ -338,6 +340,9 @@
             >
             <button role="menuitem" onclick={() => (showSearch = true)}
               >{t('Search in mod files…')}</button
+            >
+            <button role="menuitem" onclick={() => (showTodds = true)}
+              >{t('Optimize textures…')}</button
             >
             <hr />
             {#each EXPORTS as x (x.format)}
@@ -747,6 +752,7 @@
 
   {#if showDownload}<DownloadDialog onclose={() => (showDownload = false)} />{/if}
   {#if showSearch}<SearchDialog onclose={() => (showSearch = false)} />{/if}
+  {#if showTodds}<ToddsDialog onclose={() => (showTodds = false)} />{/if}
 
   {#if showDups}<Duplicates onclose={() => (showDups = false)} />{/if}
 

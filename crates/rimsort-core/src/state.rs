@@ -996,6 +996,65 @@ Total # of mods: {}
         meta::save(&s.meta_path, &s.meta)
     }
 
+    /// todds settings, stored under RimSort's own keys so a shared settings file stays compatible.
+    pub fn todds_options(&self) -> crate::todds::ToddsOptions {
+        let s = self.settings.read().unwrap();
+        let text = |k: &str| {
+            s.extra
+                .get(k)
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_owned()
+        };
+        let flag = |k: &str, d: bool| s.extra.get(k).and_then(|v| v.as_bool()).unwrap_or(d);
+        crate::todds::ToddsOptions {
+            preset: crate::todds::Preset::from_setting(&text("todds_preset")),
+            dry_run: flag("todds_dry_run", false),
+            overwrite: flag("todds_overwrite", false),
+            custom_command: text("todds_custom_command"),
+            active_mods_target: flag("todds_active_mods_target", true),
+        }
+    }
+
+    pub fn set_todds_options(&self, o: crate::todds::ToddsOptions) -> Result<()> {
+        self.mutate_settings(|s| {
+            let put = |s: &mut Settings, k: &str, v: serde_json::Value| {
+                s.extra.insert(k.to_owned(), v);
+            };
+            put(s, "todds_preset", o.preset.setting_name().into());
+            put(s, "todds_dry_run", o.dry_run.into());
+            put(s, "todds_overwrite", o.overwrite.into());
+            put(s, "todds_custom_command", o.custom_command.clone().into());
+            put(s, "todds_active_mods_target", o.active_mods_target.into());
+            Ok(())
+        })
+    }
+
+    /// Run todds over the active mods (or every mod folder) in the background.
+    pub fn run_todds(self: &Arc<Self>, opts: crate::todds::ToddsOptions) -> Result<TaskId> {
+        let inst = self.current_instance()?;
+        let targets: Vec<PathBuf> = if opts.active_mods_target {
+            let s = self.session.read().unwrap();
+            s.active
+                .ids
+                .iter()
+                .filter_map(|id| s.index.get(*id))
+                .map(|m| m.path.clone())
+                .filter(|p| p.is_dir())
+                .collect()
+        } else {
+            [&inst.local_folder, &inst.workshop_folder]
+                .into_iter()
+                .filter(|f| !f.is_empty())
+                .map(PathBuf::from)
+                .filter(|p| p.is_dir())
+                .collect()
+        };
+        Ok(self
+            .tasks
+            .spawn(move |ctx| crate::todds::run(&opts, &targets, ctx)))
+    }
+
     pub fn troubleshoot_preview(&self, fix: crate::troubleshoot::Fix) -> Result<Vec<String>> {
         let files = crate::troubleshoot::preview(&self.current_instance()?, fix)?;
         Ok(files
