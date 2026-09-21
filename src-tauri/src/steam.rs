@@ -5,7 +5,7 @@
 //! client is created per operation and dropped straight after, because while it is alive Steam
 //! shows the user as "playing RimWorld".
 
-use rimsort_core::{Error, Result, paths::RIMWORLD_APPID};
+use rimsort_core::{Error, Result};
 use serde::Serialize;
 use specta::Type;
 
@@ -19,6 +19,7 @@ pub struct SteamOutcome {
 /// Connect to the running Steam client as RimWorld (the DLL must sit next to the exe).
 #[cfg(windows)]
 fn connect() -> Result<steamworks::Client> {
+    use rimsort_core::paths::RIMWORLD_APPID;
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(std::path::Path::to_path_buf));
