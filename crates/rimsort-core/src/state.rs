@@ -123,6 +123,7 @@ impl AppState {
                 dependencies_as_load_after: s.use_moddependencies_as_load_these_before,
                 use_alternative_ids: s.use_alternative_package_ids_as_satisfying_dependencies,
                 prefer_versioned: s.prefer_versioned_about_tags,
+                alphabetical_sort: s.sorting_algorithm.eq_ignore_ascii_case("alphabetical"),
             },
             warning: self.load_warning.clone(),
             checks: paths::validate(&current),
@@ -162,6 +163,12 @@ impl AppState {
             s.use_moddependencies_as_load_these_before = o.dependencies_as_load_after;
             s.use_alternative_package_ids_as_satisfying_dependencies = o.use_alternative_ids;
             s.prefer_versioned_about_tags = o.prefer_versioned;
+            s.sorting_algorithm = if o.alphabetical_sort {
+                "Alphabetical"
+            } else {
+                "Topological"
+            }
+            .into();
             Ok(())
         })
     }
@@ -487,6 +494,7 @@ impl AppState {
             SortSettings {
                 dependencies_as_load_after: s.use_moddependencies_as_load_these_before,
                 use_alternative_ids: s.use_alternative_package_ids_as_satisfying_dependencies,
+                alphabetical: s.sorting_algorithm.eq_ignore_ascii_case("alphabetical"),
             }
         };
         let mut s = self.session.write().unwrap();

@@ -287,6 +287,8 @@ export type OptionsDto = {
 	use_alternative_ids: boolean,
 	/**  Prefer `*ByVersion` About.xml entries for the running game version (applied on rescan). */
 	prefer_versioned: boolean,
+	/**  Sort by name (dependencies first) instead of topologically — RimSort's deprecated mode. */
+	alphabetical_sort: boolean,
 };
 
 export type PathCheck = {

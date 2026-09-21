@@ -165,6 +165,17 @@
     {#if tab === 'sorting'}
       <fieldset>
         <legend>Sorting &amp; validation</legend>
+        <div class="row">
+          <label for="sort-algo">Sorting algorithm</label>
+          <select
+            id="sort-algo"
+            value={opts.alphabetical_sort ? 'alpha' : 'topo'}
+            onchange={(e) => (opts.alphabetical_sort = e.currentTarget.value === 'alpha')}
+          >
+            <option value="topo">Topological (recommended)</option>
+            <option value="alpha">Alphabetical (deprecated in RimSort)</option>
+          </select>
+        </div>
         <label class="check"
           ><input type="checkbox" bind:checked={opts.dependencies_as_load_after} /> Treat declared dependencies
           as “load after” when sorting</label

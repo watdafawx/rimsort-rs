@@ -25,6 +25,8 @@ pub struct OptionsDto {
     pub use_alternative_ids: bool,
     /// Prefer `*ByVersion` About.xml entries for the running game version (applied on rescan).
     pub prefer_versioned: bool,
+    /// Sort by name (dependencies first) instead of topologically — RimSort's deprecated mode.
+    pub alphabetical_sort: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]

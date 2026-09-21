@@ -42,6 +42,8 @@ pub struct SortSettings {
     pub dependencies_as_load_after: bool,
     /// Let a dependency's alternative package ids satisfy it.
     pub use_alternative_ids: bool,
+    /// RimSort's deprecated "Alphabetical" mode: by name, pulling dependencies in ahead of dependents.
+    pub alphabetical: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -264,6 +266,61 @@ pub fn explain_cycles(index: &ModIndex, cycles: &[Vec<String>]) -> Vec<Vec<Strin
         .collect()
 }
 
+/// Port of RimSort's `do_alphabetical_sort`: mods by lowercase name, each preceded by its (recursively
+/// inserted) dependencies. `deps` maps package id → ids that must load before it (active mods only).
+fn alphabetical(deps: &Graph, names: &HashMap<&str, &str>) -> Vec<String> {
+    let mut by_name: Vec<(&str, &str)> = names.iter().map(|(p, n)| (*p, *n)).collect();
+    by_name.sort_by(|a, b| {
+        a.1.to_lowercase()
+            .cmp(&b.1.to_lowercase())
+            .then_with(|| a.0.cmp(b.0))
+    });
+    let mut order: Vec<String> = Vec::with_capacity(by_name.len());
+    for (pid, _) in by_name {
+        if !order.iter().any(|p| p == pid) {
+            order.push(pid.to_owned());
+            let at = order.len() - 1;
+            force_insert(&mut order, deps, names, pid, at);
+        }
+    }
+    order
+}
+
+fn force_insert(
+    order: &mut Vec<String>,
+    deps: &Graph,
+    names: &HashMap<&str, &str>,
+    pid: &str,
+    just_appended: usize,
+) {
+    let Some(direct) = deps.get(pid) else { return };
+    let mut sorted: Vec<&String> = direct
+        .iter()
+        .filter(|d| names.contains_key(d.as_str()))
+        .collect();
+    sorted.sort_by(|a, b| {
+        names[a.as_str()]
+            .cmp(names[b.as_str()])
+            .then_with(|| a.cmp(b))
+    });
+    for dep in sorted {
+        if order.contains(dep) {
+            continue;
+        }
+        let pid_pos = order.iter().position(|p| p == pid).unwrap_or(just_appended);
+        let mut insert_at = just_appended;
+        for e in order[just_appended.min(pid_pos)..pid_pos].iter().rev() {
+            if deps.get(dep).is_some_and(|d| d.contains(e)) {
+                insert_at = order.iter().position(|p| p == e).unwrap() + 1;
+                break;
+            }
+        }
+        order.insert(insert_at, dep.clone());
+        let new_at = insert_at;
+        force_insert(order, deps, names, dep, new_at);
+    }
+}
+
 pub fn sort_active(index: &ModIndex, active: &[ModId], settings: SortSettings) -> SortOutcome {
     let c = compile(index, settings);
 
@@ -287,6 +344,23 @@ pub fn sort_active(index: &ModIndex, active: &[ModId], settings: SortSettings) -
             .collect()
     };
     let active_deps = filter(&c.deps);
+    if settings.alphabetical {
+        let raw: HashMap<&str, &str> = active
+            .iter()
+            .filter_map(|id| index.get(*id).filter(|m| m.valid))
+            .map(|m| (m.package_id.as_str(), m.name.as_str()))
+            .collect();
+        let mut order: Vec<ModId> = alphabetical(&active_deps, &raw)
+            .iter()
+            .map(|pid| pid_to_id[pid.as_str()])
+            .collect();
+        let mut placed: HashSet<ModId> = order.iter().copied().collect();
+        order.extend(active.iter().copied().filter(|id| placed.insert(*id)));
+        return SortOutcome {
+            order,
+            cycles: vec![],
+        };
+    }
     let active_rev = filter(&c.rev);
 
     let expand = |known: &BTreeSet<String>, graph: &Graph| -> BTreeSet<String> {
@@ -344,6 +418,25 @@ mod tests {
     use crate::mods::{Dependency, Mod, ModType, Rules};
     use std::path::Path;
 
+    #[test]
+    fn alphabetical_orders_by_name_with_dependencies_first() {
+        let mods = vec![
+            mk("a.zeta", "Zeta", &[], &[], &[]),
+            mk("b.alpha", "Alpha", &["a.zeta"], &[], &[]),
+            mk("c.mid", "Mid", &[], &[], &[]),
+        ];
+        let (names, out) = run(
+            mods,
+            SortSettings {
+                alphabetical: true,
+                ..S
+            },
+        );
+        assert!(out.cycles.is_empty());
+        // Alpha wants Zeta first, so Zeta is pulled in directly before it; Mid follows alphabetically.
+        assert_eq!(names, ["a.zeta", "b.alpha", "c.mid"]);
+    }
+
     fn mk(pid: &str, name: &str, after: &[&str], before: &[&str], deps: &[&str]) -> Mod {
         Mod {
             id: ModId::from_path(Path::new(pid)),
@@ -382,6 +475,7 @@ mod tests {
     const S: SortSettings = SortSettings {
         dependencies_as_load_after: false,
         use_alternative_ids: true,
+        alphabetical: false,
     };
 
     fn run(mods: Vec<Mod>, s: SortSettings) -> (Vec<String>, SortOutcome) {
