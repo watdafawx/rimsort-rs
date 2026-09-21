@@ -1,7 +1,9 @@
 <script lang="ts">
   import { dialogFocus } from './actions'
   import { open } from '@tauri-apps/plugin-dialog'
+  import { getVersion } from '@tauri-apps/api/app'
   import { openUrl } from '@tauri-apps/plugin-opener'
+  import { onMount } from 'svelte'
   import type { DbResult, Fix, InstanceDto } from '../bindings'
   import { i18n, LANGS, setLanguage } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
@@ -22,10 +24,27 @@
     ['appearance', 'Appearance'],
     ['databases', 'Databases'],
     ['maintenance', 'Maintenance'],
+    ['about', 'About'],
   ] as const
   let tab = $state<(typeof TABS)[number][0]>('locations')
   let dbResults = $state<DbResult[]>([])
   let dbBusy = $state(false)
+  let version = $state('')
+  onMount(() => {
+    getVersion().then(
+      (v) => (version = v),
+      () => {},
+    )
+  })
+  const SHORTCUTS: [string, string][] = [
+    ['Ctrl + S', 'Save ModsConfig.xml'],
+    ['Ctrl + Z / Ctrl + Y', 'Undo / redo list changes'],
+    ['Ctrl + Shift + F', 'Search in mod files'],
+    ['Ctrl + + / − / 0', 'Interface size'],
+    ['Enter / Delete', 'Move the selected mods to the other list'],
+    ['Double-click', 'Move a mod to the other list'],
+    ['Esc', 'Close dialog or menu'],
+  ]
 
   async function updateDbs() {
     dbBusy = true
@@ -289,6 +308,31 @@
       </fieldset>
     {/if}
 
+    {#if tab === 'about'}
+      <fieldset>
+        <legend>RimSort-rs {version}</legend>
+        <p class="dim">
+          A fast rewrite of RimSort in Rust, Tauri and Svelte. It reads and writes
+          RimSort-compatible settings, rules and lists. Licensed GPL-3.0, derived from RimSort.
+        </p>
+        <div class="row">
+          <button onclick={() => openUrl('https://github.com/RimSort/RimSort')}
+            >RimSort project</button
+          >
+          <button onclick={() => openUrl('https://github.com/joseasoler/todds')}>todds</button>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Keyboard shortcuts</legend>
+        <dl class="keys">
+          {#each SHORTCUTS as [k, what] (k)}
+            <dt><kbd>{k}</kbd></dt>
+            <dd>{what}</dd>
+          {/each}
+        </dl>
+      </fieldset>
+    {/if}
+
     {#if tab === 'maintenance'}
       <fieldset>
         <legend>Troubleshooting</legend>
@@ -349,6 +393,16 @@
     width: min(720px, 92vw);
   }
 
+  .keys {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.3rem 1rem;
+    margin: 0;
+  }
+  .keys dd {
+    margin: 0;
+    color: var(--dim);
+  }
   .fix {
     display: flex;
     align-items: center;
