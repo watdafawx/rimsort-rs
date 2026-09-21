@@ -86,6 +86,8 @@
   let showDownload = $state(false)
   let showSearch = $state(false)
   let showPalette = $state(false)
+  /** Warnings-only filter of the Active list (set by clicking the status chips). */
+  let activeWarnOnly = $state(false)
   let focusReq = $state<{ id: string; n: number } | null>(null)
   let showTodds = $state(false)
   let showBackups = $state(false)
@@ -822,6 +824,7 @@
       listId="active"
       rows={app.active}
       warnings={app.warnings}
+      bind:onlyWarn={activeWarnOnly}
       {saveIds}
       focus={focusReq}
       onhover={(row, rect) => (hover = { row, rect, list: 'active' })}
@@ -868,23 +871,26 @@
           inactive: app.inactive.length,
         })}</span
       >
-      {#if app.errorCount}<span
+      {#if app.errorCount}<button
           class="chip err"
+          onclick={() => (activeWarnOnly = !activeWarnOnly)}
           use:tip={{
             title: T('Mods with errors'),
             text: T(
-              'Missing required mods or incompatible mods in your active list. Hover a mod to see why.',
+              'Missing required mods or incompatible mods in your active list. Click to filter the Active list; hover a mod to see why.',
             ),
-          }}><Icon name="error" size={13} />{t('{n} with errors', { n: app.errorCount })}</span
+          }}><Icon name="error" size={13} />{t('{n} with errors', { n: app.errorCount })}</button
         >{/if}
-      {#if app.warningCount}<span
+      {#if app.warningCount}<button
           class="chip warn"
+          onclick={() => (activeWarnOnly = !activeWarnOnly)}
           use:tip={{
             title: T('Mods with warnings'),
             text: T(
-              'Load-order problems, version mismatches or available replacements. Hover a mod for details.',
+              'Load-order problems, version mismatches or available replacements. Click to filter the Active list; hover a mod for details.',
             ),
-          }}><Icon name="alert" size={13} />{t('{n} with warnings', { n: app.warningCount })}</span
+          }}
+          ><Icon name="alert" size={13} />{t('{n} with warnings', { n: app.warningCount })}</button
         >{/if}
       {#if saveIds && prefs.saveMarks && newCount}<span
           class="chip"

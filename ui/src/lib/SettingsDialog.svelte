@@ -8,7 +8,7 @@
   import { i18n, LANGS, setLanguage, t, T } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
   import { setTheme, theme, type ThemeMode } from './theme.svelte'
-  import { RECENT_CHOICES, prefs, setPref, setRecentDays } from './prefs.svelte'
+  import { RECENT_CHOICES, prefs, setDensity, setPref, setRecentDays } from './prefs.svelte'
   import { setZoom, ZOOM_STEPS, zoom } from './zoom.svelte'
   import { app, loadSettings, refresh } from './store.svelte'
 
@@ -298,6 +298,19 @@
                     : t('Last {n} days', { n: d })}</option
               >
             {/each}
+          </select>
+        </div>
+        <div class="row">
+          <label for="density-select">{t('Row density')}</label>
+          <select
+            id="density-select"
+            value={prefs.density}
+            onchange={(e) =>
+              setDensity(e.currentTarget.value as 'compact' | 'normal' | 'comfortable')}
+          >
+            <option value="compact">{t('Compact')}</option>
+            <option value="normal">{t('Normal')}</option>
+            <option value="comfortable">{t('Comfortable')}</option>
           </select>
         </div>
         <label class="check"

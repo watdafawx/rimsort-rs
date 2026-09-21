@@ -7,7 +7,7 @@
   import type { ModRow, Warning } from '../bindings'
   import Icon from './Icon.svelte'
   import { t, T } from './i18n.svelte'
-  import { prefs } from './prefs.svelte'
+  import { prefs, ROW_HEIGHT } from './prefs.svelte'
   import { tip } from './tip'
   import steamIcon from '../assets/mod/steam_icon.png'
   import ludeonIcon from '../assets/mod/ludeon_icon.png'
@@ -19,7 +19,8 @@
   import newIcon from '../assets/mod/new.png'
   import { inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
-  const ROW = 28
+  /** Row height in px; the virtual scroll maths and the CSS both follow the density preference. */
+  const ROW = $derived(ROW_HEIGHT[prefs.density])
   let hoverTimer: ReturnType<typeof setTimeout> | undefined
   function hoverIn(r: ModRow, e: MouseEvent) {
     clearTimeout(hoverTimer)
@@ -41,6 +42,7 @@
     onhover,
     onhoverend,
     focus = null,
+    onlyWarn = $bindable(false),
     onmove,
     onactivate,
     onselect,
@@ -58,6 +60,8 @@
     onhoverend?: () => void
     /** Ask the list to scroll to and select a mod (command palette). `n` changes on every request. */
     focus?: { id: string; n: number } | null
+    /** Warnings-only filter; bindable so the status chips can switch it on. */
+    onlyWarn?: boolean
     /** Rows dropped on this list; `beforeId` is the row they were dropped above (null = end). */
     onmove: (from: string, ids: string[], beforeId: string | null) => void
     /** Double-click / Enter / Delete on the selection. */
@@ -68,7 +72,6 @@
   } = $props()
 
   let query = $state('')
-  let onlyWarn = $state(false)
   let typeFilter = $state('')
   let scroller: HTMLDivElement
   let scrollTop = $state(0)
@@ -315,7 +318,7 @@
     ondragleave={() => (dropAt = null)}
     ondrop={drop}
   >
-    <div class="spacer" style:height="{shown.length * ROW}px">
+    <div class="spacer" style:height="{shown.length * ROW}px" style:--row-h="{ROW}px">
       {#each visible as r, k (r.id)}
         {@const i = start + k}
         {@const w = warnings[r.id]}
@@ -509,7 +512,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 28px;
+    height: var(--row-h);
     display: flex;
     align-items: center;
     gap: 0.55rem;

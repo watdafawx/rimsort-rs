@@ -14,11 +14,14 @@ export const prefs = $state({
   saveMarks: true,
   /** Rescan by itself when mods or ModsConfig.xml change on disk. */
   autoRefresh: true,
+  /** Row height preset for the mod lists. */
+  density: 'normal' as 'compact' | 'normal' | 'comfortable',
 })
 
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
   if (RECENT_CHOICES.includes(saved.recentDays)) prefs.recentDays = saved.recentDays
+  if (['compact', 'normal', 'comfortable'].includes(saved.density)) prefs.density = saved.density
   for (const k of ['sourceIcons', 'typeIcons', 'saveMarks', 'autoRefresh'] as const) {
     if (typeof saved[k] === 'boolean') prefs[k] = saved[k]
   }
@@ -36,6 +39,13 @@ function persist() {
 
 export function setRecentDays(days: number) {
   prefs.recentDays = days
+  persist()
+}
+
+export const ROW_HEIGHT = { compact: 24, normal: 28, comfortable: 34 } as const
+
+export function setDensity(d: 'compact' | 'normal' | 'comfortable') {
+  prefs.density = d
   persist()
 }
 
