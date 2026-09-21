@@ -500,8 +500,8 @@
   {#if external.changed}
     <div class="banner external">
       {external.changed === 'config'
-        ? 'ModsConfig.xml was changed outside RimSort-rs.'
-        : 'Mods were added, removed or changed on disk.'}
+        ? t('ModsConfig.xml was changed outside RimSort-rs.')
+        : t('Mods were added, removed or changed on disk.')}
       {#if app.dirty && external.changed === 'config'}<span class="dim"
           >{t('(refreshing discards your unsaved changes)')}</span
         >{/if}
@@ -517,10 +517,9 @@
   {#if app.missing.length}
     <div class="banner">
       <button class="link" onclick={toggleMissing}>
-        ⚠ {app.missing.length} mod{app.missing.length === 1 ? '' : 's'} in ModsConfig.xml {app
-          .missing.length === 1
-          ? 'is'
-          : 'are'} not installed
+        ⚠ {app.missing.length === 1
+          ? t('{n} mod in ModsConfig.xml is not installed', { n: 1 })
+          : t('{n} mods in ModsConfig.xml are not installed', { n: app.missing.length })}
       </button>
       {#if showMissing}
         <ul class="missing">
@@ -535,16 +534,18 @@
                   onclick={() =>
                     openUrl(
                       `https://steamcommunity.com/sharedfiles/filedetails/?id=${m.workshop_id}`,
-                    )}>Workshop page</button
+                    )}>{t('Workshop page')}</button
                 >
-                <button class="link" onclick={() => downloadMods([m.workshop_id])}>Download</button>
+                <button class="link" onclick={() => downloadMods([m.workshop_id])}
+                  >{t('Download')}</button
+                >
               {:else}
-                <span class="dim">no unambiguous Workshop match</span>
+                <span class="dim">{t('no unambiguous Workshop match')}</span>
               {/if}
             </li>
           {/each}
         </ul>
-        <p class="dim note">Saving drops these from ModsConfig.xml.</p>
+        <p class="dim note">{t('Saving drops these from ModsConfig.xml.')}</p>
       {/if}
     </div>
   {/if}
@@ -667,32 +668,45 @@
     {#if app.jobTask && tasks[app.jobTask]}
       {@const j = tasks[app.jobTask]}
       <Icon name="download" size={14} />
-      <span class="job">{j.msg || 'Working…'}</span>
+      <span class="job">{j.msg || t('Working…')}</span>
       <progress max={j.total || 1} value={j.done}></progress>
       <button class="ghost small" onclick={() => call(commands.cancelTask(j.id))}
         >{t('Cancel')}</button
       >
     {:else if app.scanning}
       <Icon name="refresh" size={14} />
-      <span>Scanning… {scan?.done ?? 0} / {scan?.total ?? '?'}</span>
+      <span
+        >{t('Scanning… {done} / {total}', {
+          done: scan?.done ?? 0,
+          total: scan?.total ?? '?',
+        })}</span
+      >
       <progress max={scan?.total || 1} value={scan?.done ?? 0}></progress>
     {:else if app.loaded}
-      <span class="chip">RimWorld {app.gameVersion}</span>
-      <span class="chip strong">{app.active.length} active · {app.inactive.length} inactive</span>
+      <span class="chip">{t('RimWorld {version}', { version: app.gameVersion })}</span>
+      <span class="chip strong"
+        >{t('{active} active · {inactive} inactive', {
+          active: app.active.length,
+          inactive: app.inactive.length,
+        })}</span
+      >
       {#if app.errorCount}<span class="chip err"
-          ><Icon name="error" size={13} />{app.errorCount} with errors</span
+          ><Icon name="error" size={13} />{t('{n} with errors', { n: app.errorCount })}</span
         >{/if}
       {#if app.warningCount}<span class="chip warn"
-          ><Icon name="alert" size={13} />{app.warningCount} with warnings</span
+          ><Icon name="alert" size={13} />{t('{n} with warnings', { n: app.warningCount })}</span
         >{/if}
       {#if app.duplicates}<button class="chip link" onclick={() => (showDups = true)}
-          >{app.duplicates} duplicate package ids</button
+          >{t('{n} duplicate package ids', { n: app.duplicates })}</button
         >{/if}
       <span class="spacer"></span>
       <span class="dim"
-        >scanned in {app.scanMs} ms · {app.communityRules
-          ? `${app.communityRules} community rules`
-          : 'no community rules'}</span
+        >{app.communityRules
+          ? t('scanned in {ms} ms · {rules} community rules', {
+              ms: app.scanMs,
+              rules: app.communityRules,
+            })
+          : t('scanned in {ms} ms · no community rules', { ms: app.scanMs })}</span
       >
     {:else}
       <span class="dim">{t('No mods loaded — check Settings → Locations.')}</span>
