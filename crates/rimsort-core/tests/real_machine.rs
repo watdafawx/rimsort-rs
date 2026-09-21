@@ -83,7 +83,7 @@ fn scan_sort_real_install() {
         t.elapsed()
     );
     for c in r.cycles.iter().take(5) {
-        println!("  cycle: {}", c.join(" <-> "));
+        println!("  cycle: {}", c.members.join(" <-> "));
     }
     let after: Vec<_> = state
         .lists()
