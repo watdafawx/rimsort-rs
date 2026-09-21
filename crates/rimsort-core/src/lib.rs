@@ -21,6 +21,7 @@ pub mod sort;
 mod state;
 pub mod steamacf;
 pub mod steamcmd;
+pub mod steamdb;
 mod task;
 pub mod troubleshoot;
 pub mod validate;

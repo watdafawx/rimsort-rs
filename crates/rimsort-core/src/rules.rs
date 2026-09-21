@@ -320,7 +320,7 @@ fn resolve(s: &Settings, prefix: &str, repo_key: &str, file: &str) -> Option<Pat
         .find(|p| p.exists())
 }
 
-fn find_in_dbs(file: &str) -> Option<PathBuf> {
+pub fn find_in_dbs(file: &str) -> Option<PathBuf> {
     db_dirs()
         .into_iter()
         .map(|d| d.join(file))

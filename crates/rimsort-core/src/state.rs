@@ -42,6 +42,8 @@ pub struct AppState {
     watcher: Mutex<Option<crate::watch::FsWatch>>,
     /// When we last wrote ModsConfig.xml, so our own save isn't reported as an external change.
     last_save: Arc<Mutex<Option<Instant>>>,
+    /// RimSort's Workshop database, parsed on first use (it is ~50 MB of JSON).
+    steam_db: std::sync::OnceLock<Option<crate::steamdb::SteamDb>>,
 }
 
 impl AppState {
@@ -91,6 +93,7 @@ impl AppState {
             session: RwLock::default(),
             watcher: Mutex::new(None),
             last_save: Arc::default(),
+            steam_db: Default::default(),
         })
     }
 
@@ -491,8 +494,34 @@ impl AppState {
             .read()
             .unwrap()
             .use_alternative_package_ids_as_satisfying_dependencies;
-        let s = self.session.read().unwrap();
-        validate::missing_dependencies(&s.index, &s.active.ids, &s.rules, use_alt)
+        let mut missing = {
+            let s = self.session.read().unwrap();
+            validate::missing_dependencies(&s.index, &s.active.ids, &s.rules, use_alt)
+        };
+        // Fill Workshop ids for dependencies that name only a package id.
+        if missing
+            .iter()
+            .any(|d| d.workshop_id.is_none() && d.installed.is_none())
+        {
+            let db = self.steam_db.get_or_init(|| {
+                crate::rules::find_in_dbs("Steam-Workshop-Database/steamDB.json")
+                    .and_then(|p| crate::steamdb::SteamDb::load(&p))
+            });
+            if let Some(db) = db {
+                for d in missing
+                    .iter_mut()
+                    .filter(|d| d.workshop_id.is_none() && d.installed.is_none())
+                {
+                    if let Some((id, name)) = db.lookup(&d.package_id, &d.name) {
+                        d.workshop_id = Some(id.to_owned());
+                        if d.name == d.package_id {
+                            d.name = name.to_owned();
+                        }
+                    }
+                }
+            }
+        }
+        missing
     }
 
     // ── sort & save ─────────────────────────────────────────────────────
