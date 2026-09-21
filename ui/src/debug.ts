@@ -23,5 +23,10 @@ export function installFrontendLogging() {
   addEventListener('error', (e) =>
     send('error', [`uncaught: ${e.message} @ ${e.filename}:${e.lineno}`]),
   )
-  addEventListener('unhandledrejection', (e) => send('error', ['unhandled rejection:', e.reason]))
+  addEventListener('unhandledrejection', (e) => {
+    // Backend failures (ErrorDto) were already shown as a toast by call(); log them quietly.
+    const backend = typeof e.reason?.kind === 'string' && typeof e.reason?.message === 'string'
+    if (backend) e.preventDefault()
+    send(backend ? 'warn' : 'error', ['unhandled rejection:', e.reason])
+  })
 }

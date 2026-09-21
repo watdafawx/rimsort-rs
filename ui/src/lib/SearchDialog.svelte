@@ -30,6 +30,8 @@
           file_names: fileNames,
         }),
       )
+    } catch {
+      /* call() already toasted the error (e.g. an invalid regex) */
     } finally {
       busy = false
     }
