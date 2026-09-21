@@ -5,7 +5,16 @@
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
-  import { call, commands, external, listenTasks, tasks, toast, toasts } from './lib/ipc.svelte'
+  import {
+    call,
+    commands,
+    dismissToast,
+    external,
+    listenTasks,
+    tasks,
+    toast,
+    toasts,
+  } from './lib/ipc.svelte'
   import Backups from './lib/Backups.svelte'
   import ConfirmDelete from './lib/ConfirmDelete.svelte'
   import DownloadDialog from './lib/DownloadDialog.svelte'
@@ -469,7 +478,19 @@
   </footer>
 
   <div class="toasts">
-    {#each toasts as t (t.id)}<div class="toast">{t.text}</div>{/each}
+    {#each toasts as t (t.id)}
+      <div class="toast">
+        {t.text}
+        {#if t.action}
+          <button
+            onclick={() => {
+              dismissToast(t.id)
+              t.action!.run()
+            }}>{t.action.label}</button
+          >
+        {/if}
+      </div>
+    {/each}
   </div>
 
   {#if app.cycles.length}

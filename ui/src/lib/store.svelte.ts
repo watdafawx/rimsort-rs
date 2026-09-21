@@ -176,8 +176,21 @@ async function pushActive() {
   revalidate()
 }
 
+/** After enabling mods: offer to also enable installed-but-inactive dependencies they need. */
+async function offerDependencies(enabled: ModRow[]) {
+  const names = new Set(enabled.map((r) => r.name))
+  const missing = await call(commands.getMissingDependencies())
+  const wanted = missing.filter((d) => d.installed && d.required_by.some((n) => names.has(n)))
+  if (!wanted.length) return
+  toast(
+    `${wanted.length} required mod${wanted.length === 1 ? ' is' : 's are'} installed but inactive`,
+    12000,
+    { label: 'Enable', run: () => void enable(wanted.map((d) => d.installed!)) },
+  )
+}
+
 /** Move rows into the active list before `beforeId` (end when null). Accepts ids from either list. */
-export async function enable(ids: string[], beforeId: string | null = null) {
+export async function enable(ids: string[], beforeId: string | null = null, offerDeps = true) {
   const set = new Set(ids)
   const moving = app.inactive.filter((r) => set.has(r.id))
   const bad = moving.filter((r) => !r.valid)
@@ -191,6 +204,7 @@ export async function enable(ids: string[], beforeId: string | null = null) {
   next.splice(at < 0 ? next.length : at, 0, ...ok)
   app.active = next
   await pushActive()
+  if (offerDeps) await offerDependencies(ok)
 }
 
 export function disable(ids: string[]) {

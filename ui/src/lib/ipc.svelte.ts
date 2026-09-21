@@ -3,15 +3,17 @@ import { commands, events, type ErrorDto, type TaskEvent } from '../bindings'
 export type { ErrorDto }
 
 // ── toasts ──────────────────────────────────────────────────────────────
-export const toasts = $state<{ id: number; text: string }[]>([])
+export type ToastAction = { label: string; run: () => void }
+export const toasts = $state<{ id: number; text: string; action?: ToastAction }[]>([])
 let toastSeq = 0
-export function toast(text: string, ms = 5000) {
+export function dismissToast(id: number) {
+  const i = toasts.findIndex((t) => t.id === id)
+  if (i >= 0) toasts.splice(i, 1)
+}
+export function toast(text: string, ms = 5000, action?: ToastAction) {
   const id = ++toastSeq
-  toasts.push({ id, text })
-  setTimeout(() => {
-    const i = toasts.findIndex((t) => t.id === id)
-    if (i >= 0) toasts.splice(i, 1)
-  }, ms)
+  toasts.push({ id, text, action })
+  setTimeout(() => dismissToast(id), ms)
 }
 
 // ── typed invoke ────────────────────────────────────────────────────────

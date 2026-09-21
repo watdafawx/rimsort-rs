@@ -86,3 +86,10 @@ button.primary {
   border: 1px solid #4a5568;
   max-width: 40ch;
 }
+.toast button {
+  margin-left: 0.6rem;
+  padding: 0.1rem 0.6rem;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}

@@ -3,17 +3,21 @@ import type { ModRow } from '../bindings'
 
 const ok = <T>(data: T) => Promise.resolve({ status: 'ok' as const, data })
 const setActive = vi.fn((ids: string[]) => (void ids, ok(null)))
+// vi.mock is hoisted, so state it closes over must be hoisted too
+const h = vi.hoisted(() => ({ missingDeps: [] as unknown[] }))
 
 vi.mock('../bindings', () => ({
   commands: {
     setActive: (ids: string[]) => setActive(ids),
     getValidation: () => ok({ mods: [], errors: 0, warnings: 0, missing_dependencies: 0 }),
+    getMissingDependencies: () => ok(h.missingDeps),
   },
   events: { taskUpdate: { listen: () => Promise.resolve(() => {}) } },
 }))
 
 const { app, disable, enable, moveActive, redo, setInactiveSort, undo } =
   await import('./store.svelte')
+const { toasts } = await import('./ipc.svelte')
 
 const row = (id: string, over: Partial<ModRow> = {}): ModRow => ({
   id,
@@ -33,6 +37,8 @@ const row = (id: string, over: Partial<ModRow> = {}): ModRow => ({
 const ids = (rows: ModRow[]) => rows.map((r) => r.id)
 
 beforeEach(() => {
+  h.missingDeps = []
+  toasts.length = 0
   app.active = [row('a'), row('b'), row('c')]
   app.inactive = [row('d'), row('e'), row('f', { valid: false })]
   app.dirty = false
@@ -106,5 +112,26 @@ describe('inactive sorting', () => {
     setInactiveSort('modified', true)
     expect(ids(app.inactive)).toEqual(['y', 'x', 'z'])
     setInactiveSort('name', false)
+  })
+})
+
+describe('dependency offer', () => {
+  it('offers to enable installed-but-inactive dependencies of the mods just enabled', async () => {
+    h.missingDeps = [
+      { package_id: 'pkg.e', name: 'E', workshop_id: null, required_by: ['d'], installed: 'e' },
+      { package_id: 'pkg.z', name: 'Z', workshop_id: null, required_by: ['d'], installed: null }, // not installed: no offer
+      { package_id: 'pkg.q', name: 'Q', workshop_id: null, required_by: ['other'], installed: 'e' }, // not needed by these mods
+    ]
+    await enable(['d'])
+    expect(toasts).toHaveLength(1)
+    expect(toasts[0].text).toMatch(/1 required mod is installed but inactive/)
+    toasts[0].action!.run()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(ids(app.active)).toContain('e')
+  })
+
+  it('stays quiet when nothing is missing', async () => {
+    await enable(['d'])
+    expect(toasts).toHaveLength(0)
   })
 })
