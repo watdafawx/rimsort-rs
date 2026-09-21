@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import { app, cloneGitMods, downloadMods } from './store.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
@@ -31,6 +32,7 @@
     aria-modal="true"
     aria-label="Download mods"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
@@ -68,13 +70,6 @@
     width: min(600px, 92vw);
   }
 
-  p {
-    margin: 0;
-  }
-  .dim {
-    color: var(--dim);
-    font-size: 0.85em;
-  }
   textarea {
     font: inherit;
     color: inherit;

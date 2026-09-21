@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import type { ModDetail } from '../bindings'
 
   let { mod, onconfirm, onclose }: { mod: ModDetail; onconfirm: () => void; onclose: () => void } =
@@ -14,6 +15,7 @@
     aria-modal="true"
     aria-label="Delete mod"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import { openUrl } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { MissingDep } from '../bindings'
@@ -43,6 +44,7 @@
     aria-modal="true"
     aria-label="Missing dependencies"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >

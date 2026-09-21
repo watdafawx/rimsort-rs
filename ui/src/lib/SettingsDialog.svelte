@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import { open } from '@tauri-apps/plugin-dialog'
   import type { DbResult, InstanceDto } from '../bindings'
   import { i18n, LANGS, setLanguage } from './i18n.svelte'
@@ -94,6 +95,7 @@
     aria-modal="true"
     aria-label="Settings"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >

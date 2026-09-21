@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './lib/actions'
   import { convertFileSrc } from '@tauri-apps/api/core'
   import { getCurrentWindow } from '@tauri-apps/api/window'
   import { open as pickFile, save as pickSave } from '@tauri-apps/plugin-dialog'
@@ -573,8 +574,9 @@
         role="alertdialog"
         aria-label="Unable to sort"
         tabindex="-1"
+        use:dialogFocus
         onclick={(e) => e.stopPropagation()}
-        onkeydown={() => {}}
+        onkeydown={(e) => e.key === 'Escape' && (app.cycles = [])}
       >
         <h2>{t('Unable to sort')}</h2>
         <p>

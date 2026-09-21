@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import { onMount } from 'svelte'
   import type { BackupInfo } from '../bindings'
   import { call, commands } from './ipc.svelte'
@@ -26,6 +27,7 @@
     aria-modal="true"
     aria-label="Restore from backup"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >

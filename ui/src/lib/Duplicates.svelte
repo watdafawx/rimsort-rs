@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import { revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
   import type { DupGroup } from '../bindings'
@@ -33,6 +34,7 @@
     aria-modal="true"
     aria-label="Duplicate mods"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >

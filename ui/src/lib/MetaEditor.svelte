@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dialogFocus } from './actions'
   import { onMount } from 'svelte'
   import type { ModDetail } from '../bindings'
   import { call, commands, toast } from './ipc.svelte'
@@ -48,6 +49,7 @@
     aria-modal="true"
     aria-label="Color, tags and notes"
     tabindex="-1"
+    use:dialogFocus
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === 'Escape' && onclose()}
   >
