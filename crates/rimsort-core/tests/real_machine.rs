@@ -27,7 +27,7 @@ fn scan_sort_real_install() {
     }
 
     let t = Instant::now();
-    state.start_scan().unwrap();
+    state.start_scan(false).unwrap();
     loop {
         match rx.recv().unwrap() {
             TaskEvent::Finished { .. } => break,
