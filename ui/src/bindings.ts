@@ -116,7 +116,8 @@ export const commands = {
 	fetched?: number,
 } | null, ErrorDto>(__TAURI_INVOKE("get_workshop_meta", { id })),
 	/**  Start the background Steam-details fetch; returns its task id, or None when everything is cached. */
-	startWorkshopSync: () => typedError<number | null, ErrorDto>(__TAURI_INVOKE("start_workshop_sync")),
+	startWorkshopSync: (force: boolean) => typedError<number | null, ErrorDto>(__TAURI_INVOKE("start_workshop_sync", { force })),
+	workshopCacheInfo: () => typedError<CacheInfo, ErrorDto>(__TAURI_INVOKE("workshop_cache_info")),
 	latestSave: () => typedError<{
 	/**  File name without extension. */
 	name: string,
@@ -146,6 +147,14 @@ export type BackupInfo = {
 	path: string,
 	unix: number,
 	count: number,
+};
+
+/**  Coverage of the on-disk cache for the installed Workshop mods. */
+export type CacheInfo = {
+	cached: number,
+	total: number,
+	/**  Oldest entry among the installed mods (unix seconds; 0 when nothing is cached). */
+	oldest: number,
 };
 
 export type CycleDto = {

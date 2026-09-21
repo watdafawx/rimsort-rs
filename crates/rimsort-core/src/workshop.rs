@@ -58,6 +58,28 @@ pub fn now() -> u32 {
         .map_or(0, |d| d.as_secs() as u32)
 }
 
+/// Coverage of the on-disk cache for the installed Workshop mods.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct CacheInfo {
+    pub cached: u32,
+    pub total: u32,
+    /// Oldest entry among the installed mods (unix seconds; 0 when nothing is cached).
+    pub oldest: u32,
+}
+
+pub fn cache_info(cache: &HashMap<String, WorkshopMeta>, ids: &[String]) -> CacheInfo {
+    let have: Vec<u32> = ids
+        .iter()
+        .filter_map(|id| cache.get(id))
+        .map(|m| m.fetched)
+        .collect();
+    CacheInfo {
+        cached: have.len() as u32,
+        total: ids.len() as u32,
+        oldest: have.iter().copied().min().unwrap_or(0),
+    }
+}
+
 /// Ids that are missing from the cache or stale.
 pub fn needs_fetch(cache: &HashMap<String, WorkshopMeta>, ids: &[String], now: u32) -> Vec<String> {
     ids.iter()
@@ -176,11 +198,16 @@ fn fetch_batch(
 /// `on_update` runs after each batch so the caller can publish partial results.
 pub fn sync(
     ids: &[String],
+    force: bool,
     ctx: &TaskCtx,
     mut on_update: impl FnMut(&HashMap<String, WorkshopMeta>),
 ) -> Result<HashMap<String, WorkshopMeta>> {
     let mut cache = load_cache();
-    let todo = needs_fetch(&cache, ids, now());
+    let todo = if force {
+        ids.to_vec()
+    } else {
+        needs_fetch(&cache, ids, now())
+    };
     if todo.is_empty() {
         return Ok(cache);
     }
@@ -205,6 +232,11 @@ pub fn sync(
         }
         save_cache(&cache)?;
         on_update(&cache);
+        ctx.progress(
+            ((n + 1) * BATCH).min(todo.len()) as u32,
+            total,
+            "Fetching Steam details",
+        );
         // Pause between batches only.
         if (n + 1) * BATCH < todo.len() {
             let until = std::time::Instant::now() + PACE;

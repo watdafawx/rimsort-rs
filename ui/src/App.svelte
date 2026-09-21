@@ -57,6 +57,7 @@
     downloadMods,
     runTodds,
     bulkMeta,
+    startWorkshopSync,
     steamSubscribe,
     describe,
     isError,
@@ -974,10 +975,10 @@
           onclick={() => (showDups = true)}
           >{t('{n} duplicate package ids', { n: app.duplicates })}</button
         >{/if}
-      {#if app.syncTask && tasks[app.syncTask]}
+      {#if app.syncTask}
         {@const sy = tasks[app.syncTask]}
         <span
-          class="chip"
+          class="chip syncing"
           use:tip={{
             title: T('Fetching Steam details'),
             text: T(
@@ -985,9 +986,24 @@
             ),
           }}
           ><Icon name="download" size={13} />{t('Steam details {done}/{total}', {
-            done: sy.done,
-            total: sy.total,
-          })}</span
+            done: sy?.done ?? 0,
+            total: sy?.total || app.steamCache?.total || '?',
+          })}<progress max={sy?.total || 1} value={sy?.done ?? 0}></progress></span
+        >
+      {:else if app.steamCache && app.steamCache.total > 0}
+        <button
+          class="chip"
+          onclick={() => startWorkshopSync(true)}
+          use:tip={{
+            title: T('Steam details cached'),
+            text: T(
+              'Subscriber counts and tags for your Workshop mods are saved on disk and refreshed weekly. Click to fetch them all again now.',
+            ),
+          }}
+          ><Icon name="check" size={13} />{t('Steam details {done}/{total}', {
+            done: app.steamCache.cached,
+            total: app.steamCache.total,
+          })}</button
         >
       {/if}
       <span class="spacer"></span>
@@ -1461,6 +1477,10 @@
     color: var(--warn);
     border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
     background: color-mix(in srgb, var(--warn) 10%, var(--panel-2));
+  }
+  .chip.syncing progress {
+    width: 4.5rem;
+    height: 6px;
   }
   button.chip {
     cursor: pointer;

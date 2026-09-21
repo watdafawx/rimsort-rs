@@ -1,5 +1,6 @@
 import {
   commands,
+  type CacheInfo,
   type CycleDto,
   type ModRow,
   type SaveInfo,
@@ -12,6 +13,8 @@ import { clearDetails } from './hovercache'
 import { t } from './i18n.svelte'
 
 export const app = $state({
+  /** How much Steam data is cached for the installed Workshop mods. */
+  steamCache: null as CacheInfo | null,
   /** Background fetch of Steam Workshop details (0 = idle). */
   syncTask: 0,
   /** Newest save game (its mod list drives the "new" markers), if any. */
@@ -187,6 +190,7 @@ export async function refresh(keep = false) {
     app.loaded = true
     clearDetails()
     revalidate(0)
+    void refreshSteamCache()
     void startWorkshopSync()
   } finally {
     app.scanning = false
@@ -335,17 +339,27 @@ export async function steamSubscribe(ids: string[], subscribe: boolean) {
 }
 
 /** Fetch Steam details for Workshop mods in the background (slow on purpose; results are cached on disk). */
-export async function startWorkshopSync() {
+export async function startWorkshopSync(force = false) {
   if (app.syncTask) return
   try {
-    const id = await call(commands.startWorkshopSync())
-    if (!id) return
-    app.syncTask = id
-    await waitTask(id)
+    const id = await call(commands.startWorkshopSync(force))
+    if (id) {
+      app.syncTask = id
+      await waitTask(id)
+    }
   } catch {
     /* offline or Steam unreachable: the cards just show less */
   } finally {
     app.syncTask = 0
+    await refreshSteamCache()
+  }
+}
+
+export async function refreshSteamCache() {
+  try {
+    app.steamCache = await call(commands.workshopCacheInfo())
+  } catch {
+    app.steamCache = null
   }
 }
 

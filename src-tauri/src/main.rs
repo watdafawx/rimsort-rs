@@ -391,8 +391,14 @@ async fn get_workshop_meta(
 /// Start the background Steam-details fetch; returns its task id, or None when everything is cached.
 #[tauri::command]
 #[specta::specta]
-async fn start_workshop_sync(state: St<'_>) -> Cmd<Option<TaskId>> {
-    Ok(state.inner().start_workshop_sync())
+async fn start_workshop_sync(state: St<'_>, force: bool) -> Cmd<Option<TaskId>> {
+    Ok(state.inner().start_workshop_sync(force))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn workshop_cache_info(state: St<'_>) -> Cmd<rimsort_core::workshop::CacheInfo> {
+    Ok(state.workshop_cache_info())
 }
 
 #[tauri::command]
@@ -540,6 +546,7 @@ fn builder() -> Builder<Wry> {
             get_dependents,
             get_workshop_meta,
             start_workshop_sync,
+            workshop_cache_info,
             latest_save,
             open_folder,
             get_todds_options,

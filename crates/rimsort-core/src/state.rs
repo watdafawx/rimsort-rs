@@ -1175,6 +1175,20 @@ Total # of mods: {}
         Ok(modlist_io::parse_list(&text)?.package_ids)
     }
 
+    /// How much of the installed Workshop mods' Steam data is cached.
+    pub fn workshop_cache_info(&self) -> crate::workshop::CacheInfo {
+        let ids: Vec<String> = {
+            let s = self.session.read().unwrap();
+            s.index
+                .mods
+                .iter()
+                .filter(|m| m.mod_type == mods::ModType::SteamWorkshop)
+                .filter_map(|m| m.published_file_id.clone())
+                .collect()
+        };
+        crate::workshop::cache_info(&self.workshop.read().unwrap(), &ids)
+    }
+
     /// Cached Steam details for a Workshop id.
     pub fn workshop_meta(&self, id: &str) -> Option<crate::workshop::WorkshopMeta> {
         self.workshop.read().unwrap().get(id).cloned()
@@ -1182,7 +1196,7 @@ Total # of mods: {}
 
     /// Fetch Steam details for every installed Workshop mod that is missing from (or stale in) the cache,
     /// slowly and in the background. None when there is nothing to fetch.
-    pub fn start_workshop_sync(self: &Arc<Self>) -> Option<TaskId> {
+    pub fn start_workshop_sync(self: &Arc<Self>, force: bool) -> Option<TaskId> {
         let ids: Vec<String> = {
             let s = self.session.read().unwrap();
             s.index
@@ -1197,12 +1211,12 @@ Total # of mods: {}
             &ids,
             crate::workshop::now(),
         );
-        if todo.is_empty() {
+        if todo.is_empty() && !force {
             return None;
         }
         let me = self.clone();
         Some(self.tasks.spawn(move |ctx| {
-            crate::workshop::sync(&ids, ctx, |cache| {
+            crate::workshop::sync(&ids, force, ctx, |cache| {
                 *me.workshop.write().unwrap() = cache.clone();
             })
             .map(|_| ())
