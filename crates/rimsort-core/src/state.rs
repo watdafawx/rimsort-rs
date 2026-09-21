@@ -1150,6 +1150,34 @@ Total # of mods: {}
         }))
     }
 
+    /// Installed mods that list `id`'s package id as a dependency (or as an alternative for one).
+    pub fn dependents(&self, id: ModId) -> Vec<crate::dto::DependentDto> {
+        let s = self.session.read().unwrap();
+        let Some(target) = s.index.get(id) else {
+            return vec![];
+        };
+        let pid = &target.package_id;
+        let mut out: Vec<_> = s
+            .index
+            .mods
+            .iter()
+            .filter(|m| m.valid && m.id != id)
+            .filter(|m| {
+                m.rules
+                    .dependencies
+                    .iter()
+                    .any(|d| &d.package_id == pid || d.alternatives.iter().any(|a| a == pid))
+            })
+            .map(|m| crate::dto::DependentDto {
+                id: m.id,
+                name: m.name.clone(),
+                package_id: m.package_id.clone(),
+            })
+            .collect();
+        out.sort_by_key(|d| d.name.to_lowercase());
+        out
+    }
+
     /// Folder size of a mod in bytes (walks the folder; call off the UI thread).
     pub fn folder_size(&self, id: ModId) -> Option<u64> {
         let path = self.session.read().unwrap().index.get(id)?.path.clone();

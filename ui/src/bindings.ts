@@ -90,6 +90,7 @@ export const commands = {
 	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
 	steamSubscribedIds: () => typedError<string[], ErrorDto>(__TAURI_INVOKE("steam_subscribed_ids")),
 	folderSize: (id: ModId) => typedError<number | null, ErrorDto>(__TAURI_INVOKE("folder_size", { id })),
+	getDependents: (id: ModId) => typedError<DependentDto[], ErrorDto>(__TAURI_INVOKE("get_dependents", { id })),
 	getWorkshopMeta: (id: string) => typedError<{
 	id?: string,
 	title?: string,
@@ -155,6 +156,13 @@ export type DbResult = {
 };
 
 export type DbStatus = "Updated" | "NotModified" | "Failed";
+
+/**  A mod that requires another one. */
+export type DependentDto = {
+	id: ModId,
+	name: string,
+	package_id: string,
+};
 
 export type DetectedPaths = {
 	game_folder: string | null,

@@ -9,7 +9,14 @@
   import { initLanguage, t, T } from './lib/i18n.svelte'
   import { initTheme } from './lib/theme.svelte'
   import { initZoom, stepZoom } from './lib/zoom.svelte'
-  import type { ExportFormat, FolderKind, ModDetail, ModRow, WorkshopMatch } from './bindings'
+  import type {
+    DependentDto,
+    ExportFormat,
+    FolderKind,
+    ModDetail,
+    ModRow,
+    WorkshopMatch,
+  } from './bindings'
   import {
     call,
     commands,
@@ -29,6 +36,7 @@
   import { prefs } from './lib/prefs.svelte'
   import { tip } from './lib/tip'
   import HoverCard from './lib/HoverCard.svelte'
+  import PkgList from './lib/PkgList.svelte'
   import CommandPalette, { type PaletteAction } from './lib/CommandPalette.svelte'
   import newIcon from './assets/mod/new.png'
   import Duplicates from './lib/Duplicates.svelte'
@@ -246,8 +254,24 @@
 
   /** Folder size of the selected mod, computed lazily (null while walking the folder). */
   let folderSize = $state<number | null>(null)
+  /** Installed mods by package id, so dependency names in the info panel can jump to the mod. */
+  const byPackage = $derived.by(() => {
+    const m = new Map<string, ModRow>()
+    for (const r of [...app.active, ...app.inactive])
+      if (!m.has(r.package_id)) m.set(r.package_id, r)
+    return m
+  })
+  let dependents = $state<DependentDto[]>([])
+
   async function select(row: ModRow) {
     detail = await call(commands.getMod(row.id))
+    dependents = []
+    call(commands.getDependents(row.id)).then(
+      (d) => {
+        if (detail?.id === row.id) dependents = d
+      },
+      () => {},
+    )
     folderSize = null
     const id = row.id
     call(commands.folderSize(id)).then(
@@ -752,13 +776,29 @@
           <dt>{t('Path')}</dt>
           <dd class="path">{detail.path}</dd>
           {#if detail.dependencies.length}<dt>{t('Depends on')}</dt>
-            <dd>{detail.dependencies.join(', ')}</dd>{/if}
+            <dd>
+              <PkgList ids={detail.dependencies} lookup={byPackage} onjump={pickFromPalette} />
+            </dd>{/if}
+          {#if dependents.length}<dt>{t('Required by')}</dt>
+            <dd>
+              <PkgList
+                ids={dependents.map((d) => d.package_id)}
+                lookup={byPackage}
+                onjump={pickFromPalette}
+              />
+            </dd>{/if}
           {#if detail.load_after.length}<dt>{t('Load after')}</dt>
-            <dd>{detail.load_after.join(', ')}</dd>{/if}
+            <dd>
+              <PkgList ids={detail.load_after} lookup={byPackage} onjump={pickFromPalette} />
+            </dd>{/if}
           {#if detail.load_before.length}<dt>{t('Load before')}</dt>
-            <dd>{detail.load_before.join(', ')}</dd>{/if}
+            <dd>
+              <PkgList ids={detail.load_before} lookup={byPackage} onjump={pickFromPalette} />
+            </dd>{/if}
           {#if detail.incompatible_with.length}<dt>{t('Incompatible')}</dt>
-            <dd>{detail.incompatible_with.join(', ')}</dd>{/if}
+            <dd>
+              <PkgList ids={detail.incompatible_with} lookup={byPackage} onjump={pickFromPalette} />
+            </dd>{/if}
         </dl>
         {#if app.warnings[detail.id]}
           <ul class="warnings">

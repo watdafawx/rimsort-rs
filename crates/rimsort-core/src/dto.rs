@@ -222,6 +222,14 @@ pub struct DupCopy {
     pub active: bool,
 }
 
+/// A mod that requires another one.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct DependentDto {
+    pub id: ModId,
+    pub name: String,
+    pub package_id: String,
+}
+
 #[derive(Debug, Clone, Serialize, Type)]
 pub struct DupGroup {
     pub package_id: String,
