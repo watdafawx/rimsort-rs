@@ -487,6 +487,33 @@ impl AppState {
         validate::validate(&s.index, &s.active.ids, &s.rules, use_alt)
     }
 
+    fn steam_db(&self) -> Option<&crate::steamdb::SteamDb> {
+        self.steam_db
+            .get_or_init(|| {
+                crate::rules::find_in_dbs("Steam-Workshop-Database/steamDB.json")
+                    .and_then(|p| crate::steamdb::SteamDb::load(&p))
+            })
+            .as_ref()
+    }
+
+    /// Workshop items for package ids that aren't installed (unambiguous Steam DB matches only).
+    pub fn workshop_matches(&self, package_ids: &[String]) -> Vec<crate::dto::WorkshopMatch> {
+        let Some(db) = self.steam_db() else {
+            return vec![];
+        };
+        package_ids
+            .iter()
+            .filter_map(|pid| {
+                let (id, name) = db.lookup(&pid.to_lowercase(), "")?;
+                Some(crate::dto::WorkshopMatch {
+                    package_id: pid.clone(),
+                    workshop_id: id.to_owned(),
+                    name: name.to_owned(),
+                })
+            })
+            .collect()
+    }
+
     /// Required-but-inactive packages for the active list.
     pub fn missing_dependencies(&self) -> Vec<validate::MissingDep> {
         let use_alt = self
@@ -499,24 +526,16 @@ impl AppState {
             validate::missing_dependencies(&s.index, &s.active.ids, &s.rules, use_alt)
         };
         // Fill Workshop ids for dependencies that name only a package id.
-        if missing
-            .iter()
-            .any(|d| d.workshop_id.is_none() && d.installed.is_none())
+        let unresolved =
+            |d: &&mut validate::MissingDep| d.workshop_id.is_none() && d.installed.is_none();
+        if missing.iter_mut().any(|d| unresolved(&d))
+            && let Some(db) = self.steam_db()
         {
-            let db = self.steam_db.get_or_init(|| {
-                crate::rules::find_in_dbs("Steam-Workshop-Database/steamDB.json")
-                    .and_then(|p| crate::steamdb::SteamDb::load(&p))
-            });
-            if let Some(db) = db {
-                for d in missing
-                    .iter_mut()
-                    .filter(|d| d.workshop_id.is_none() && d.installed.is_none())
-                {
-                    if let Some((id, name)) = db.lookup(&d.package_id, &d.name) {
-                        d.workshop_id = Some(id.to_owned());
-                        if d.name == d.package_id {
-                            d.name = name.to_owned();
-                        }
+            for d in missing.iter_mut().filter(unresolved) {
+                if let Some((id, name)) = db.lookup(&d.package_id, &d.name) {
+                    d.workshop_id = Some(id.to_owned());
+                    if d.name == d.package_id {
+                        d.name = name.to_owned();
                     }
                 }
             }

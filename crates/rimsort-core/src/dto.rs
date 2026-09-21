@@ -16,6 +16,14 @@ pub struct InstanceDto {
     pub launch_via_steam: bool,
 }
 
+/// A not-installed package resolved to a Workshop item via the Steam database.
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct WorkshopMatch {
+    pub package_id: String,
+    pub workshop_id: String,
+    pub name: String,
+}
+
 /// Global toggles that affect scanning, sorting and validation.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct OptionsDto {

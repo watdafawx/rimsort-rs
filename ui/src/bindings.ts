@@ -79,6 +79,7 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	workshopMatches: (packageIds: string[]) => typedError<WorkshopMatch[], ErrorDto>(__TAURI_INVOKE("workshop_matches", { packageIds })),
 	troubleshootPreview: (fix: Fix) => typedError<string[], ErrorDto>(__TAURI_INVOKE("troubleshoot_preview", { fix })),
 	troubleshootApply: (fix: Fix) => typedError<number, ErrorDto>(__TAURI_INVOKE("troubleshoot_apply", { fix })),
 	searchMods: (query: SearchQuery) => typedError<SearchResult, ErrorDto>(__TAURI_INVOKE("search_mods", { query })),
@@ -411,6 +412,13 @@ export type WarningKind =
 "UseThisInstead" | 
 /**  Steam knows a newer version than the installed one (not downloaded yet). */
 "WorkshopUpdate";
+
+/**  A not-installed package resolved to a Workshop item via the Steam database. */
+export type WorkshopMatch = {
+	package_id: string,
+	workshop_id: string,
+	name: string,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

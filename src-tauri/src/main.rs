@@ -296,6 +296,15 @@ async fn troubleshoot_apply(state: St<'_>, fix: rimsort_core::troubleshoot::Fix)
 
 #[tauri::command]
 #[specta::specta]
+async fn workshop_matches(
+    state: St<'_>,
+    package_ids: Vec<String>,
+) -> Cmd<Vec<rimsort_core::dto::WorkshopMatch>> {
+    Ok(state.workshop_matches(&package_ids))
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
     Ok(state.game_running())
 }
@@ -350,6 +359,7 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            workshop_matches,
             troubleshoot_preview,
             troubleshoot_apply,
             search_mods,

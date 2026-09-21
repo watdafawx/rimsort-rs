@@ -8,7 +8,7 @@
   import Icon from './lib/Icon.svelte'
   import { initLanguage, t } from './lib/i18n.svelte'
   import { initTheme } from './lib/theme.svelte'
-  import type { ExportFormat, ModDetail, ModRow } from './bindings'
+  import type { ExportFormat, ModDetail, ModRow, WorkshopMatch } from './bindings'
   import {
     call,
     commands,
@@ -53,6 +53,12 @@
   let showSettings = $state(false)
   let detail = $state<ModDetail | null>(null)
   let showMissing = $state(false)
+  let missingMatches = $state<WorkshopMatch[]>([])
+  async function toggleMissing() {
+    showMissing = !showMissing
+    if (showMissing)
+      missingMatches = await call(commands.workshopMatches($state.snapshot(app.missing)))
+  }
   let listMenu = $state(false)
   let showDeps = $state(false)
   let showDups = $state(false)
@@ -429,13 +435,36 @@
 
   {#if app.missing.length}
     <div class="banner">
-      <button class="link" onclick={() => (showMissing = !showMissing)}>
+      <button class="link" onclick={toggleMissing}>
         ⚠ {app.missing.length} mod{app.missing.length === 1 ? '' : 's'} in ModsConfig.xml {app
           .missing.length === 1
           ? 'is'
           : 'are'} not installed
       </button>
-      {#if showMissing}<div class="missing">{app.missing.join(', ')}</div>{/if}
+      {#if showMissing}
+        <ul class="missing">
+          {#each app.missing as pid (pid)}
+            {@const m = missingMatches.find((x) => x.package_id === pid)}
+            <li>
+              <code>{pid}</code>
+              {#if m}
+                <span class="dim">{m.name}</span>
+                <button
+                  class="link"
+                  onclick={() =>
+                    openUrl(
+                      `https://steamcommunity.com/sharedfiles/filedetails/?id=${m.workshop_id}`,
+                    )}>Workshop page</button
+                >
+                <button class="link" onclick={() => downloadMods([m.workshop_id])}>Download</button>
+              {:else}
+                <span class="dim">no unambiguous Workshop match</span>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+        <p class="dim note">Saving drops these from ModsConfig.xml.</p>
+      {/if}
     </div>
   {/if}
 
@@ -811,10 +840,23 @@
     padding: 0.15rem 0.6rem;
   }
   .missing {
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.2rem;
+    font-size: 0.9em;
+    max-height: 9rem;
+    overflow: auto;
+  }
+  .missing li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+  }
+  .note {
+    margin: 0.3rem 0 0;
     font-size: 0.85em;
-    margin-top: 0.25rem;
-    word-break: break-all;
-    color: var(--dim);
   }
 
   /* Main body */
