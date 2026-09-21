@@ -62,3 +62,5 @@ jobs:
       - name: vitest
         run: npm test
         working-directory: ui
+      - name: i18n keys up to date
+        run: node scripts/i18n.mjs --check

@@ -5,6 +5,7 @@
 
 <script lang="ts">
   import type { ModRow, Warning } from '../bindings'
+  import { t } from './i18n.svelte'
   import { describe, inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
   const ROW = 28
@@ -175,21 +176,21 @@
     <span class="count"
       >{shown.length !== rows.length ? `${shown.length} / ` : ''}{rows.length}</span
     >
-    <select bind:value={typeFilter} title="Filter by mod source" aria-label="Filter by type">
-      <option value="">All</option>
+    <select bind:value={typeFilter} title={t('Filter by mod source')} aria-label="Filter by type">
+      <option value="">{t('All')}</option>
       {#each Object.entries(TYPE) as [k, [tag]] (k)}<option value={k}>{tag}</option>{/each}
     </select>
     {#if listId === 'inactive'}
       <select
-        title="Sort"
+        title={t('Sort')}
         aria-label="Sort by"
         value={inactiveSort.key}
         onchange={(e) => setInactiveSort(e.currentTarget.value as SortKey, inactiveSort.desc)}
       >
-        <option value="name">Name</option>
-        <option value="author">Author</option>
-        <option value="modified">Modified</option>
-        <option value="type">Type</option>
+        <option value="name">{t('Name')}</option>
+        <option value="author">{t('Author')}</option>
+        <option value="modified">{t('Modified')}</option>
+        <option value="type">{t('Type')}</option>
       </select>
       <button
         class="dir"
@@ -198,10 +199,10 @@
         >{inactiveSort.desc ? '↓' : '↑'}</button
       >
     {/if}
-    <label class="only" title="Show only mods with warnings"
+    <label class="only" title={t('Show only mods with warnings')}
       ><input type="checkbox" bind:checked={onlyWarn} />⚠</label
     >
-    <input type="search" placeholder="Search name, author, package id…" bind:value={query} />
+    <input type="search" placeholder={t('Search name, author, package id…')} bind:value={query} />
   </header>
   <div
     class="scroll"
@@ -262,7 +263,7 @@
           style:transform="translateY({dropAt * ROW - 1}px)"
         ></div>{/if}
     </div>
-    {#if !rows.length}<p class="empty">Nothing here.</p>{/if}
+    {#if !rows.length}<p class="empty">{t('Nothing here.')}</p>{/if}
   </div>
 </section>
 

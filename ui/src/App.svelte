@@ -4,6 +4,7 @@
   import { open as pickFile, save as pickSave } from '@tauri-apps/plugin-dialog'
   import { openUrl, revealItemInDir } from '@tauri-apps/plugin-opener'
   import { onMount } from 'svelte'
+  import { initLanguage, LANGS, i18n, setLanguage, t } from './lib/i18n.svelte'
   import type { ExportFormat, ModDetail, ModRow } from './bindings'
   import {
     call,
@@ -191,6 +192,10 @@
   })
 
   onMount(() => {
+    initLanguage()
+  })
+
+  onMount(() => {
     const unlisten = listenTasks()
     ;(async () => {
       await unlisten
@@ -269,21 +274,30 @@
     {/if}
     <span class="spacer"></span>
     {#if app.dirty}<span class="dirty" title="Changes not yet written to ModsConfig.xml"
-        >● unsaved</span
+        >● {t('unsaved')}</span
       >{/if}
-    <select id="theme" aria-label="Theme" title="Theme" bind:value={theme}>
-      <option value="auto">Auto theme</option>
-      <option value="dark">Dark</option>
-      <option value="light">Light</option>
+    <select
+      id="lang"
+      aria-label="Language"
+      title="Language"
+      value={i18n.lang}
+      onchange={(e) => setLanguage(e.currentTarget.value)}
+    >
+      {#each LANGS as l (l.code)}<option value={l.code}>{l.label}</option>{/each}
     </select>
-    <button id="settings" onclick={() => (showSettings = true)}>⚙ Settings</button>
+    <select id="theme" aria-label="Theme" title="Theme" bind:value={theme}>
+      <option value="auto">{t('Auto theme')}</option>
+      <option value="dark">{t('Dark')}</option>
+      <option value="light">{t('Light')}</option>
+    </select>
+    <button id="settings" onclick={() => (showSettings = true)}>⚙ {t('Settings')}</button>
   </header>
 
   <nav class="toolbar">
-    <button id="refresh" onclick={doRefresh} disabled={app.scanning}>⟳ Refresh</button>
-    <button id="sort" onclick={sort} disabled={!app.loaded}>⇅ Sort</button>
-    <button id="save" class="primary" onclick={save} disabled={!app.loaded}>💾 Save</button>
-    <button id="run" onclick={run} disabled={!app.loaded}>▶ Run</button>
+    <button id="refresh" onclick={doRefresh} disabled={app.scanning}>⟳ {t('Refresh')}</button>
+    <button id="sort" onclick={sort} disabled={!app.loaded}>⇅ {t('Sort')}</button>
+    <button id="save" class="primary" onclick={save} disabled={!app.loaded}>💾 {t('Save')}</button>
+    <button id="run" onclick={run} disabled={!app.loaded}>▶ {t('Run')}</button>
     <div class="dropdown">
       <button
         id="listmenu"
@@ -291,19 +305,25 @@
         onclick={(e) => {
           e.stopPropagation()
           listMenu = !listMenu
-        }}>⇄ List ▾</button
+        }}>⇄ {t('List')} ▾</button
       >
       {#if listMenu}
         <div class="menu" role="menu" style:position="absolute" style:top="100%" style:left="0">
-          <button role="menuitem" onclick={doImport}>Import list…</button>
-          <button role="menuitem" onclick={() => (showBackups = true)}>Restore from backup…</button>
-          <button role="menuitem" onclick={() => (showDownload = true)}> Download mods… </button>
+          <button role="menuitem" onclick={doImport}>{t('Import list…')}</button>
+          <button role="menuitem" onclick={() => (showBackups = true)}
+            >{t('Restore from backup…')}</button
+          >
+          <button role="menuitem" onclick={() => (showDownload = true)}
+            >{t('Download mods…')}</button
+          >
           <hr />
           {#each EXPORTS as x (x.format)}
             <button role="menuitem" onclick={() => doExport(x)}>{x.label}</button>
           {/each}
           <hr />
-          <button role="menuitem" onclick={() => copyList('Report', 'Report')}>Copy report</button>
+          <button role="menuitem" onclick={() => copyList('Report', 'Report')}
+            >{t('Copy report')}</button
+          >
           <button role="menuitem" onclick={() => copyList('PackageIds', 'Package ids')}>
             Copy package ids
           </button>
@@ -322,7 +342,7 @@
     >
       📜 Log
     </button>
-    <button id="clear" onclick={clearActive} disabled={!app.loaded}>Clear</button>
+    <button id="clear" onclick={clearActive} disabled={!app.loaded}>{t('Clear')}</button>
   </nav>
 
   {#if external.changed}
@@ -331,14 +351,14 @@
         ? 'ModsConfig.xml was changed outside RimSort-rs.'
         : 'Mods were added, removed or changed on disk.'}
       {#if app.dirty && external.changed === 'config'}<span class="dim"
-          >(refreshing discards your unsaved changes)</span
+          >{t('(refreshing discards your unsaved changes)')}</span
         >{/if}
       {#if external.changed === 'mods' && app.dirty}
-        <button onclick={() => refresh(true)}>Rescan, keep my changes</button>
+        <button onclick={() => refresh(true)}>{t('Rescan, keep my changes')}</button>
       {:else}
-        <button onclick={doRefresh}>Refresh</button>
+        <button onclick={doRefresh}>{t('Refresh')}</button>
       {/if}
-      <button class="link" onclick={() => (external.changed = null)}>Dismiss</button>
+      <button class="link" onclick={() => (external.changed = null)}>{t('Dismiss')}</button>
     </div>
   {/if}
 
@@ -368,29 +388,29 @@
         {#if detail.preview}<img class="preview" src={convertFileSrc(detail.preview)} alt="" />{/if}
         <h3>{detail.name}</h3>
         <dl>
-          <dt>Package</dt>
+          <dt>{t('Package')}</dt>
           <dd>{detail.package_id}</dd>
-          {#if detail.authors.length}<dt>Authors</dt>
+          {#if detail.authors.length}<dt>{t('Authors')}</dt>
             <dd>{detail.authors.join(', ')}</dd>{/if}
-          <dt>Type</dt>
+          <dt>{t('Type')}</dt>
           <dd>
             {detail.mod_type}{detail.published_file_id ? ` · ${detail.published_file_id}` : ''}
           </dd>
-          {#if detail.supported_versions.length}<dt>Supports</dt>
+          {#if detail.supported_versions.length}<dt>{t('Supports')}</dt>
             <dd>{detail.supported_versions.join(', ')}</dd>{/if}
-          {#if detail.workshop_updated}<dt>Updated</dt>
+          {#if detail.workshop_updated}<dt>{t('Updated')}</dt>
             <dd>{new Date(detail.workshop_updated * 1000).toLocaleDateString()}</dd>{/if}
-          {#if detail.mod_version}<dt>Version</dt>
+          {#if detail.mod_version}<dt>{t('Version')}</dt>
             <dd>{detail.mod_version}</dd>{/if}
-          <dt>Path</dt>
+          <dt>{t('Path')}</dt>
           <dd class="path">{detail.path}</dd>
-          {#if detail.dependencies.length}<dt>Depends on</dt>
+          {#if detail.dependencies.length}<dt>{t('Depends on')}</dt>
             <dd>{detail.dependencies.join(', ')}</dd>{/if}
-          {#if detail.load_after.length}<dt>Load after</dt>
+          {#if detail.load_after.length}<dt>{t('Load after')}</dt>
             <dd>{detail.load_after.join(', ')}</dd>{/if}
-          {#if detail.load_before.length}<dt>Load before</dt>
+          {#if detail.load_before.length}<dt>{t('Load before')}</dt>
             <dd>{detail.load_before.join(', ')}</dd>{/if}
-          {#if detail.incompatible_with.length}<dt>Incompatible</dt>
+          {#if detail.incompatible_with.length}<dt>{t('Incompatible')}</dt>
             <dd>{detail.incompatible_with.join(', ')}</dd>{/if}
         </dl>
         {#if app.warnings[detail.id]}
@@ -399,11 +419,13 @@
               <li class:err={isError(w)}>
                 {describe(w)}
                 {#if w.kind === 'UseThisInstead' && w.other}
-                  <button class="link" onclick={() => openUrl(workshopUrl(w.other))}>Open</button>
+                  <button class="link" onclick={() => openUrl(workshopUrl(w.other))}
+                    >{t('Open')}</button
+                  >
                   <button
                     class="link"
                     disabled={!!app.jobTask}
-                    onclick={() => downloadMods([w.other])}>Download</button
+                    onclick={() => downloadMods([w.other])}>{t('Download')}</button
                   >
                 {/if}
               </li>
@@ -415,7 +437,7 @@
         {#if detail.invalid_reason}<p class="bad">{detail.invalid_reason}</p>{/if}
         <p class="desc">{detail.description}</p>
       {:else}
-        <p class="dim">Select a mod to see its details.</p>
+        <p class="dim">{t('Select a mod to see its details.')}</p>
       {/if}
     </aside>
     <div
@@ -426,7 +448,7 @@
     ></div>
 
     <ModList
-      title="Inactive"
+      title={t('Inactive')}
       listId="inactive"
       rows={app.inactive}
       onmove={dropInto('inactive')}
@@ -441,7 +463,7 @@
       onpointerdown={(e) => startDrag(e, 'split')}
     ></div>
     <ModList
-      title="Active"
+      title={t('Active')}
       listId="active"
       rows={app.active}
       warnings={app.warnings}
@@ -457,7 +479,7 @@
       {@const j = tasks[app.jobTask]}
       <span class="job">⬇ {j.msg || 'Working…'}</span>
       <progress max={j.total || 1} value={j.done}></progress>
-      <button onclick={() => call(commands.cancelTask(j.id))}>Cancel</button>
+      <button onclick={() => call(commands.cancelTask(j.id))}>{t('Cancel')}</button>
     {:else if app.scanning}
       <span>Scanning… {scan?.done ?? 0} / {scan?.total ?? '?'}</span>
       <progress max={scan?.total || 1} value={scan?.done ?? 0}></progress>
@@ -475,7 +497,7 @@
           >{app.duplicates} duplicate package ids</button
         >{/if}
     {:else}
-      <span class="dim">No mods loaded — check Settings → Locations.</span>
+      <span class="dim">{t('No mods loaded — check Settings → Locations.')}</span>
     {/if}
   </footer>
 
@@ -505,7 +527,7 @@
         onclick={(e) => e.stopPropagation()}
         onkeydown={() => {}}
       >
-        <h2>Unable to sort</h2>
+        <h2>{t('Unable to sort')}</h2>
         <p>
           These load-order rules contradict each other, so no valid order exists. Remove or change
           one rule in each group (mods → right-click → Edit rules… for community/your rules).
@@ -518,7 +540,7 @@
             </ul>
           </section>
         {/each}
-        <button onclick={() => (app.cycles = [])}>Close</button>
+        <button onclick={() => (app.cycles = [])}>{t('Close')}</button>
       </div>
     </div>
   {/if}
@@ -543,55 +565,57 @@
       {/if}
       <hr />
       <button role="menuitem" disabled={!d} onclick={() => act(() => revealItemInDir(d!.path))}
-        >Open folder</button
+        >{t('Open folder')}</button
       >
       <button
         role="menuitem"
         disabled={!menu.row.published_file_id}
         onclick={() => act(() => openUrl(workshopUrl(menu!.row.published_file_id!)))}
-        >Open Workshop page</button
+        >{t('Open Workshop page')}</button
       >
       <button
         role="menuitem"
         disabled={!menu.row.published_file_id}
         onclick={() => act(() => openUrl(steamUrl(menu!.row.published_file_id!)))}
-        >Open in Steam client</button
+        >{t('Open in Steam client')}</button
       >
       <button
         role="menuitem"
         disabled={!d?.url.startsWith('http')}
-        onclick={() => act(() => openUrl(d!.url))}>Open mod URL</button
+        onclick={() => act(() => openUrl(d!.url))}>{t('Open mod URL')}</button
       >
       <hr />
       {#if menu.row.mod_type === 'SteamWorkshop'}
         <button role="menuitem" onclick={() => act(() => createLocalCopy(menu!.row.id))}>
-          Create local copy
+          {t('Create local copy')}
         </button>
       {/if}
       {#if menu.row.mod_type === 'Git'}
         <button role="menuitem" onclick={() => act(() => updateGit(menu!.row.id))}>
-          Update (git pull)
+          {t('Update (git pull)')}
         </button>
       {/if}
       <button role="menuitem" onclick={() => act(() => (editMetaId = menu!.row.id))}
-        >Color, tags &amp; notes…</button
+        >{t('Color, tags & notes…')}</button
       >
       <button role="menuitem" onclick={() => act(() => (editRuleId = menu!.row.id))}
-        >Edit rules…</button
+        >{t('Edit rules…')}</button
       >
       <button
         role="menuitem"
         class="danger-item"
         disabled={!d || menu.row.mod_type === 'Ludeon'}
-        onclick={() => act(() => (deleting = d))}>Delete mod…</button
+        onclick={() => act(() => (deleting = d))}>{t('Delete mod…')}</button
       >
       <hr />
       <button role="menuitem" onclick={() => act(() => copy(menu!.row.package_id))}
-        >Copy package id</button
+        >{t('Copy package id')}</button
       >
-      <button role="menuitem" onclick={() => act(() => copy(menu!.row.name))}>Copy name</button>
+      <button role="menuitem" onclick={() => act(() => copy(menu!.row.name))}
+        >{t('Copy name')}</button
+      >
       <button role="menuitem" disabled={!d} onclick={() => act(() => copy(d!.path))}
-        >Copy path</button
+        >{t('Copy path')}</button
       >
     </div>
   {/if}
