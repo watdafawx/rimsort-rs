@@ -2,6 +2,7 @@ import {
   commands,
   type CycleDto,
   type ModRow,
+  type SaveInfo,
   type SettingsView,
   type ToddsOptions,
   type Warning,
@@ -10,6 +11,8 @@ import { call, external, toast, waitTask } from './ipc.svelte'
 import { t } from './i18n.svelte'
 
 export const app = $state({
+  /** Newest save game (its mod list drives the "new" markers), if any. */
+  save: null as SaveInfo | null,
   settings: null as SettingsView | null,
   active: [] as ModRow[],
   inactive: [] as ModRow[],
@@ -170,6 +173,11 @@ export async function refresh(keep = false) {
     app.scanMs = l.scan_ms
     app.duplicates = l.duplicate_package_ids
     app.communityRules = l.community_rules
+    try {
+      app.save = await call(commands.latestSave())
+    } catch {
+      app.save = null // markers are a nicety; never block a scan on them
+    }
     if (!keep) app.dirty = false
     undoStack.length = redoStack.length = 0 // snapshots may reference mods that just changed
     syncDepth()

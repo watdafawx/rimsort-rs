@@ -371,6 +371,15 @@ async fn open_folder(app: AppHandle, state: St<'_>, kind: FolderKind) -> Cmd<()>
 
 #[tauri::command]
 #[specta::specta]
+async fn latest_save(state: St<'_>) -> Cmd<Option<rimsort_core::saves::SaveInfo>> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.latest_save())
+        .await
+        .map_err(|e| rimsort_core::Error::Other(e.to_string()).into())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
     Ok(state.game_running())
 }
@@ -425,6 +434,7 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            latest_save,
             open_folder,
             get_todds_options,
             set_todds_options,

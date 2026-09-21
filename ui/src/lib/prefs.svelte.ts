@@ -6,22 +6,40 @@ export const RECENT_CHOICES = [0, 1, 3, 7, 14, 30] as const
 export const prefs = $state({
   /** Mark mods whose folder changed within this many days (0 = off). */
   recentDays: 7 as number,
+  /** Steam / Ludeon / folder icons instead of text badges for the mod source. */
+  sourceIcons: true,
+  /** C# vs XML/content icon on each mod. */
+  typeIcons: true,
+  /** "New" marker on mods missing from the latest save (and "in save" on inactive ones). */
+  saveMarks: true,
 })
 
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
   if (RECENT_CHOICES.includes(saved.recentDays)) prefs.recentDays = saved.recentDays
+  for (const k of ['sourceIcons', 'typeIcons', 'saveMarks'] as const) {
+    if (typeof saved[k] === 'boolean') prefs[k] = saved[k]
+  }
 } catch {
   /* corrupt or unavailable: keep defaults */
 }
 
-export function setRecentDays(days: number) {
-  prefs.recentDays = days
+function persist() {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ recentDays: days }))
+    localStorage.setItem(KEY, JSON.stringify(prefs))
   } catch {
     /* ignore */
   }
+}
+
+export function setRecentDays(days: number) {
+  prefs.recentDays = days
+  persist()
+}
+
+export function setPref(key: 'sourceIcons' | 'typeIcons' | 'saveMarks', on: boolean) {
+  prefs[key] = on
+  persist()
 }
 
 /** "3 days ago"-style text for a unix-seconds timestamp. */

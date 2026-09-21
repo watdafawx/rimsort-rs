@@ -59,3 +59,13 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      # Portable zip (exe + portable.txt) next to the installers; tagged releases only.
+      - name: Portable zip (Windows)
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $zip = ./scripts/portable.ps1
+          gh release upload "${{ github.ref_name }}" $zip --clobber

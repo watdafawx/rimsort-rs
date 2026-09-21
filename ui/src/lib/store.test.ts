@@ -32,6 +32,7 @@ const row = (id: string, over: Partial<ModRow> = {}): ModRow => ({
   color: null,
   tags: [],
   has_note: false,
+  csharp: false,
   ...over,
 })
 const ids = (rows: ModRow[]) => rows.map((r) => r.id)

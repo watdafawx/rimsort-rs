@@ -35,7 +35,8 @@ target setup).
 
 Put an empty `portable.txt` next to `rimsort-rs.exe`: settings, databases, downloaded tools and logs then live in
 `data/` beside the executable instead of `%LOCALAPPDATA%\RimSort-rs` (`RIMSORT_RS_DATA_DIR` still overrides both).
-A portable zip is `rimsort-rs.exe` + `portable.txt` — no installer step is needed.
+The release workflow attaches `RimSort-rs_<version>_x64-portable.zip` (exe + `portable.txt`) to the draft release;
+build it locally with `just portable` (uses `scripts/portable.ps1`).
 
 ## Crash reports
 

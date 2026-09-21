@@ -66,6 +66,8 @@ pub struct ModRow {
     pub color: Option<String>,
     pub tags: Vec<String>,
     pub has_note: bool,
+    /// Ships compiled code (`Assemblies/*.dll`); otherwise it is XML/texture content only.
+    pub csharp: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
@@ -109,6 +111,8 @@ pub struct ModDetail {
     /// When the installed Workshop version was published (unix seconds), if Steam's manifest knows.
     pub workshop_updated: Option<u32>,
     /// Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists.
+    /// When the mod folder first appeared on this machine (unix seconds).
+    pub added: Option<u32>,
     pub startup_ms: Option<f32>,
     pub startup_off_thread_ms: Option<f32>,
 }

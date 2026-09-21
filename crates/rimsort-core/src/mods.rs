@@ -108,6 +108,10 @@ pub struct Mod {
     pub user: ExtRule,
     /// Unix seconds of the folder mtime, -1 if unknown.
     pub mtime: i64,
+    /// Unix seconds when the folder was created here (for Workshop mods: when Steam first downloaded it), -1 if unknown.
+    pub added: i64,
+    /// Ships compiled code: an `Assemblies/*.dll` in the mod folder or one of its version folders.
+    pub csharp: bool,
 }
 
 /// Which folder a candidate mod directory came from.
@@ -269,6 +273,38 @@ fn mod_type(source: Source, path: &Path, folder: &str) -> ModType {
     }
 }
 
+/// `Assemblies/*.dll` in the mod folder or any immediate subfolder (version folders such as `1.6/`).
+fn has_assemblies(root: &Path) -> bool {
+    let dll_in = |dir: &Path| {
+        fs::read_dir(dir).is_ok_and(|rd| {
+            rd.flatten().any(|e| {
+                e.path()
+                    .extension()
+                    .is_some_and(|x| x.eq_ignore_ascii_case("dll"))
+            })
+        })
+    };
+    let assemblies = |dir: &Path| {
+        fs::read_dir(dir).ok().and_then(|rd| {
+            rd.flatten()
+                .find(|e| {
+                    e.file_name()
+                        .to_string_lossy()
+                        .eq_ignore_ascii_case("Assemblies")
+                })
+                .map(|e| e.path())
+        })
+    };
+    if assemblies(root).is_some_and(|a| dll_in(&a)) {
+        return true;
+    }
+    fs::read_dir(root).is_ok_and(|rd| {
+        rd.flatten()
+            .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+            .any(|e| assemblies(&e.path()).is_some_and(|a| dll_in(&a)))
+    })
+}
+
 /// Parse one mod directory. Never fails: bad mods come back `valid == false` with a reason.
 fn parse_mod(path: &Path, source: Source, cfg: &ScanConfig) -> Mod {
     let folder = path
@@ -277,6 +313,11 @@ fn parse_mod(path: &Path, source: Source, cfg: &ScanConfig) -> Mod {
         .unwrap_or_default();
     let mtime = fs::metadata(path)
         .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(-1, |d| d.as_secs() as i64);
+    let added = fs::metadata(path)
+        .and_then(|m| m.created())
         .ok()
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map_or(-1, |d| d.as_secs() as i64);
@@ -300,6 +341,8 @@ fn parse_mod(path: &Path, source: Source, cfg: &ScanConfig) -> Mod {
         community: ExtRule::default(),
         user: ExtRule::default(),
         mtime,
+        added,
+        csharp: has_assemblies(path),
     };
 
     let Some(about) = find_about_xml(path) else {
@@ -536,6 +579,8 @@ impl Mod {
             community: ExtRule::default(),
             user: ExtRule::default(),
             mtime: 0,
+            added: 0,
+            csharp: false,
         }
     }
 }

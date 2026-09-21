@@ -8,7 +8,7 @@
   import { i18n, LANGS, setLanguage, t, T } from './i18n.svelte'
   import { call, commands, toast } from './ipc.svelte'
   import { setTheme, theme, type ThemeMode } from './theme.svelte'
-  import { RECENT_CHOICES, prefs, setRecentDays } from './prefs.svelte'
+  import { RECENT_CHOICES, prefs, setPref, setRecentDays } from './prefs.svelte'
   import { setZoom, ZOOM_STEPS, zoom } from './zoom.svelte'
   import { app, loadSettings, refresh } from './store.svelte'
 
@@ -299,6 +299,30 @@
             {/each}
           </select>
         </div>
+        <label class="check"
+          ><input
+            type="checkbox"
+            checked={prefs.sourceIcons}
+            onchange={(e) => setPref('sourceIcons', e.currentTarget.checked)}
+          />
+          {t('Show source icons (Steam, Ludeon, local folder)')}</label
+        >
+        <label class="check"
+          ><input
+            type="checkbox"
+            checked={prefs.typeIcons}
+            onchange={(e) => setPref('typeIcons', e.currentTarget.checked)}
+          />
+          {t('Show C# / XML content icons')}</label
+        >
+        <label class="check"
+          ><input
+            type="checkbox"
+            checked={prefs.saveMarks}
+            onchange={(e) => setPref('saveMarks', e.currentTarget.checked)}
+          />
+          {t('Mark mods that are new since the latest save game')}</label
+        >
       </fieldset>
     {/if}
 

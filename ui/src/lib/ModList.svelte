@@ -6,8 +6,16 @@
 <script lang="ts">
   import type { ModRow, Warning } from '../bindings'
   import Icon from './Icon.svelte'
-  import { t } from './i18n.svelte'
+  import { t, T } from './i18n.svelte'
   import { ago, prefs } from './prefs.svelte'
+  import steamIcon from '../assets/mod/steam_icon.png'
+  import ludeonIcon from '../assets/mod/ludeon_icon.png'
+  import localIcon from '../assets/mod/local_icon.png'
+  import gitIcon from '../assets/mod/git.png'
+  import steamcmdIcon from '../assets/mod/steamcmd_icon.png'
+  import csharpIcon from '../assets/mod/csharp.png'
+  import xmlIcon from '../assets/mod/xml.png'
+  import newIcon from '../assets/mod/new.png'
   import { describe, inactiveSort, isError, setInactiveSort, type SortKey } from './store.svelte'
 
   const ROW = 28
@@ -18,6 +26,7 @@
     listId,
     rows,
     warnings = {},
+    saveIds = null,
     onmove,
     onactivate,
     onselect,
@@ -28,6 +37,8 @@
     rows: ModRow[]
     /** Warnings by mod id (active list only). */
     warnings?: Record<string, Warning[]>
+    /** Package ids of the latest save game; null when there is none (no markers then). */
+    saveIds?: Set<string> | null
     /** Rows dropped on this list; `beforeId` is the row they were dropped above (null = end). */
     onmove: (from: string, ids: string[], beforeId: string | null) => void
     /** Double-click / Enter / Delete on the selection. */
@@ -73,6 +84,32 @@
     SteamCmd: ['CMD', 'cmd'],
     Git: ['GIT', 'git'],
     Unknown: ['?', 'unknown'],
+  }
+
+  /** Source icon (Ludeon / Steam / folder) and, for Git/SteamCMD mods, the extra marker. */
+  const SOURCE: Record<string, { icon: string; label: string; extra?: [string, string] }> = {
+    Ludeon: { icon: ludeonIcon, label: T('RimWorld / official expansion') },
+    SteamWorkshop: { icon: steamIcon, label: T('Steam Workshop mod') },
+    Local: { icon: localIcon, label: T('Local mod') },
+    Git: {
+      icon: localIcon,
+      label: T('Local mod'),
+      extra: [gitIcon, T('Contains a git repository')],
+    },
+    SteamCmd: {
+      icon: localIcon,
+      label: T('Local mod'),
+      extra: [steamcmdIcon, T('Downloaded with SteamCMD')],
+    },
+    Unknown: { icon: localIcon, label: T('Unknown source') },
+  }
+
+  /** "New" on active mods the latest save doesn't know; "in save" on inactive ones it does. */
+  const saveMark = (r: ModRow): 'new' | 'insave' | null => {
+    if (!saveIds || !prefs.saveMarks) return null
+    const known = saveIds.has(r.package_id)
+    if (listId === 'active') return known ? null : 'new'
+    return known ? 'insave' : null
   }
 
   function rowTitle(r: ModRow): string {
@@ -269,9 +306,40 @@
             dropAt = null
           }}
         >
-          <span class="tag {cls}">{tag}</span>
+          {#if prefs.sourceIcons}
+            {@const src = SOURCE[r.mod_type] ?? SOURCE.Unknown}
+            <img class="ico" src={src.icon} alt="" width="18" height="18" title={t(src.label)} />
+          {:else}
+            <span class="tag {cls}">{tag}</span>
+          {/if}
+          {#if prefs.typeIcons}
+            <img
+              class="ico"
+              src={r.csharp ? csharpIcon : xmlIcon}
+              alt=""
+              width="18"
+              height="18"
+              title={r.csharp
+                ? t('Contains custom C# assemblies (custom code)')
+                : t('Contains custom content (textures / XML)')}
+            />
+          {/if}
           <span class="name">{r.name}</span>
           <span class="author">{r.authors}</span>
+          {#if prefs.sourceIcons && SOURCE[r.mod_type]?.extra}
+            {@const [xi, xt] = SOURCE[r.mod_type].extra!}
+            <img class="ico" src={xi} alt="" width="16" height="16" title={t(xt)} />
+          {/if}
+          {#if saveMark(r) === 'new'}<img
+              class="ico new"
+              src={newIcon}
+              alt=""
+              width="24"
+              height="24"
+              title={t('Not in latest save')}
+            />{:else if saveMark(r) === 'insave'}<span class="upd" title={t('In latest save')}
+              ><Icon name="save" size={13} /></span
+            >{/if}
           {#if prefs.recentDays && isRecent(r)}<span class="upd" title="Changed {ago(r.modified)}"
               ><Icon name="download" size={13} /></span
             >{/if}
@@ -294,6 +362,13 @@
 </section>
 
 <style>
+  .ico {
+    flex: none;
+    object-fit: contain;
+  }
+  .ico.new {
+    margin-right: 2px;
+  }
   .upd {
     display: inline-flex;
     color: var(--accent);

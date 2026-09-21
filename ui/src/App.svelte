@@ -26,6 +26,8 @@
   import SearchDialog from './lib/SearchDialog.svelte'
   import ToddsDialog from './lib/ToddsDialog.svelte'
   import { richText } from './lib/richtext'
+  import { prefs } from './lib/prefs.svelte'
+  import newIcon from './assets/mod/new.png'
   import Duplicates from './lib/Duplicates.svelte'
   import LogView from './lib/LogView.svelte'
   import MetaEditor from './lib/MetaEditor.svelte'
@@ -282,6 +284,11 @@
   }
 
   const scan = $derived(tasks[app.scanTask])
+  /** Package ids of the latest save game (null = no save, so no "new" markers). */
+  const saveIds = $derived(app.save ? new Set(app.save.package_ids) : null)
+  const newCount = $derived(
+    saveIds ? app.active.filter((r) => !saveIds.has(r.package_id)).length : 0,
+  )
   const dropInto =
     (to: 'active' | 'inactive') => (from: string, ids: string[], beforeId: string | null) => {
       if (to === 'active') {
@@ -578,6 +585,10 @@
           </dd>
           {#if detail.supported_versions.length}<dt>{t('Supports')}</dt>
             <dd>{detail.supported_versions.join(', ')}</dd>{/if}
+          {#if detail.added}<dt title={t('When this mod folder first appeared on this PC')}>
+              {t('Added')}
+            </dt>
+            <dd>{new Date(detail.added * 1000).toLocaleDateString()}</dd>{/if}
           {#if detail.workshop_updated}<dt>{t('Updated')}</dt>
             <dd>{new Date(detail.workshop_updated * 1000).toLocaleDateString()}</dd>{/if}
           {#if detail.startup_ms != null}<dt title="Load time measured by the Loading Progress mod">
@@ -645,6 +656,7 @@
       title={t('Inactive')}
       listId="inactive"
       rows={app.inactive}
+      {saveIds}
       onmove={dropInto('inactive')}
       onactivate={(ids) => enable(ids)}
       onselect={select}
@@ -661,6 +673,7 @@
       listId="active"
       rows={app.active}
       warnings={app.warnings}
+      {saveIds}
       onmove={dropInto('active')}
       onactivate={(ids) => disable(ids)}
       onselect={select}
@@ -699,6 +712,13 @@
         >{/if}
       {#if app.warningCount}<span class="chip warn"
           ><Icon name="alert" size={13} />{t('{n} with warnings', { n: app.warningCount })}</span
+        >{/if}
+      {#if saveIds && prefs.saveMarks && newCount}<span
+          class="chip"
+          title={t('Active mods that are not in the latest save ({name})', {
+            name: app.save!.name,
+          })}
+          ><img src={newIcon} alt="" width="16" height="16" />{t('{n} new', { n: newCount })}</span
         >{/if}
       {#if app.duplicates}<button class="chip link" onclick={() => (showDups = true)}
           >{t('{n} duplicate package ids', { n: app.duplicates })}</button

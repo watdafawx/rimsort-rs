@@ -61,3 +61,8 @@ golden-multi n="12":
 bench:
     node scripts/gen_mods.mjs 5000 debug/synth
     $env:SYNTH_DIR = "$PWD/debug/synth"; $env:RIMSORT_RS_DATA_DIR = "$PWD/debug/synthdata"; cargo test -p rimsort-core --release --test synthetic -- --ignored --nocapture
+
+# Portable Windows zip (exe + portable.txt) from a release build
+portable:
+    cargo tauri build --no-bundle
+    ./scripts/portable.ps1

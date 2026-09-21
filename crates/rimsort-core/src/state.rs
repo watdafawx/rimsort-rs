@@ -385,6 +385,7 @@ impl AppState {
             color: md.and_then(|d| d.color.clone()),
             tags: md.map(|d| d.tags.clone()).unwrap_or_default(),
             has_note: md.is_some_and(|d| !d.note.is_empty()),
+            csharp: m.csharp,
         }
     }
 
@@ -455,6 +456,7 @@ impl AppState {
         let s = self.session.read().unwrap();
         let m = s.index.get(id)?;
         Some(ModDetail {
+            added: u32::try_from(m.added).ok().filter(|a| *a > 0),
             startup_ms: impact.map(|i| i.total_ms),
             startup_off_thread_ms: impact.map(|i| i.off_thread_ms),
             id: m.id,
@@ -1109,6 +1111,13 @@ Total # of mods: {}
 
     pub fn troubleshoot_apply(&self, fix: crate::troubleshoot::Fix) -> Result<u32> {
         Ok(crate::troubleshoot::apply(&self.current_instance()?, fix)? as u32)
+    }
+
+    /// The mods of the newest save game, if there is one with a mod list.
+    pub fn latest_save(&self) -> Option<crate::saves::SaveInfo> {
+        let config = self.current_instance().ok()?.config_folder;
+        let (path, mtime) = crate::saves::latest(&config)?;
+        crate::saves::read(&path, mtime)
     }
 
     pub fn game_running(&self) -> bool {

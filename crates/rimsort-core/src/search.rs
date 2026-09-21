@@ -209,6 +209,8 @@ mod tests {
             community: Default::default(),
             user: Default::default(),
             mtime: 0,
+            added: 0,
+            csharp: false,
         };
         ModIndex::new(vec![m], String::new(), 0)
     }

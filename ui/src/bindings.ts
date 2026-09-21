@@ -43,7 +43,11 @@ export const commands = {
 	note: string,
 	/**  When the installed Workshop version was published (unix seconds), if Steam's manifest knows. */
 	workshop_updated: number | null,
-	/**  Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists. */
+	/**
+	 *  Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists.
+	 *  When the mod folder first appeared on this machine (unix seconds).
+	 */
+	added: number | null,
 	startup_ms: number | null,
 	startup_off_thread_ms: number | null,
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
@@ -82,6 +86,14 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	latestSave: () => typedError<{
+	/**  File name without extension. */
+	name: string,
+	/**  Save file modification time (unix seconds). */
+	modified: number,
+	/**  Lowercased package ids the save was made with. */
+	package_ids: string[],
+} | null, ErrorDto>(__TAURI_INVOKE("latest_save")),
 	openFolder: (kind: FolderKind) => typedError<null, ErrorDto>(__TAURI_INVOKE("open_folder", { kind })),
 	getToddsOptions: () => typedError<ToddsOptions, ErrorDto>(__TAURI_INVOKE("get_todds_options")),
 	setToddsOptions: (options: ToddsOptions) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_todds_options", { options })),
@@ -257,7 +269,11 @@ export type ModDetail = {
 	note: string,
 	/**  When the installed Workshop version was published (unix seconds), if Steam's manifest knows. */
 	workshop_updated: number | null,
-	/**  Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists. */
+	/**
+	 *  Load time attributed to this mod by the "Loading Progress" mod (milliseconds), if a report exists.
+	 *  When the mod folder first appeared on this machine (unix seconds).
+	 */
+	added: number | null,
 	startup_ms: number | null,
 	startup_off_thread_ms: number | null,
 };
@@ -281,6 +297,8 @@ export type ModRow = {
 	color: string | null,
 	tags: string[],
 	has_note: boolean,
+	/**  Ships compiled code (`Assemblies/*.dll`); otherwise it is XML/texture content only. */
+	csharp: boolean,
 };
 
 /**  All rule sources for one mod, for the rule editor. */
@@ -331,6 +349,15 @@ export type Preset =
 "Clean" | 
 /**  The user's own arguments. */
 "Custom";
+
+export type SaveInfo = {
+	/**  File name without extension. */
+	name: string,
+	/**  Save file modification time (unix seconds). */
+	modified: number,
+	/**  Lowercased package ids the save was made with. */
+	package_ids: string[],
+};
 
 export type SaveResult = {
 	path: string,
