@@ -43,3 +43,11 @@ Commands return `Result<T, ErrorDto>` (`{kind, message}`); wrap calls in `call()
 | `launch` | Game launch, running-game detection (`sysinfo`) |
 
 External processes never block the UI: they run inside a task, stream output into `ctx.progress`, and are killed when the task is cancelled.
+
+## Steam subscribe/unsubscribe
+
+`src-tauri/src/steam.rs` uses the `steamworks` crate (Windows only for now). `steam_api64.dll` (from the crate's
+Steamworks SDK redistributable, vendored in `src-tauri/redist/win64/`) is **delay-loaded** (`build.rs`), copied next to
+the exe in dev builds and shipped by the installer via `tauri.windows.conf.json`; without it, or without a running Steam
+client, the commands return an error instead of crashing. A client is created per operation and dropped straight after
+(Steam shows "playing RimWorld" while one is alive). Steam does the actual download/removal, which can take minutes.

@@ -379,6 +379,15 @@ async fn latest_save(state: St<'_>) -> Cmd<Option<rimsort_core::saves::SaveInfo>
         .map_err(|e| rimsort_core::Error::Other(e.to_string()).into())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn steam_subscribed_ids() -> Cmd<Vec<String>> {
+    tauri::async_runtime::spawn_blocking(steam::subscribed_ids)
+        .await
+        .map_err(|e| rimsort_core::Error::Other(e.to_string()))?
+        .map_err(Into::into)
+}
+
 /// Subscribe to (or unsubscribe from) Workshop items in the Steam client.
 #[tauri::command]
 #[specta::specta]
@@ -446,6 +455,7 @@ fn builder() -> Builder<Wry> {
             launch_game,
             game_running,
             steam_set_subscribed,
+            steam_subscribed_ids,
             latest_save,
             open_folder,
             get_todds_options,

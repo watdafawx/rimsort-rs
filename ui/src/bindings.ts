@@ -88,6 +88,7 @@ export const commands = {
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
 	/**  Subscribe to (or unsubscribe from) Workshop items in the Steam client. */
 	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
+	steamSubscribedIds: () => typedError<string[], ErrorDto>(__TAURI_INVOKE("steam_subscribed_ids")),
 	latestSave: () => typedError<{
 	/**  File name without extension. */
 	name: string,

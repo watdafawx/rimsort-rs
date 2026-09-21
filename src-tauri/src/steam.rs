@@ -16,16 +16,9 @@ pub struct SteamOutcome {
     pub error: Option<String>,
 }
 
+/// Connect to the running Steam client as RimWorld (the DLL must sit next to the exe).
 #[cfg(windows)]
-pub fn set_subscribed(ids: &[String], subscribe: bool) -> Result<Vec<SteamOutcome>> {
-    use std::{sync::mpsc, time::Duration};
-    use steamworks::{Client, PublishedFileId};
-
-    let ids: Vec<u64> = ids
-        .iter()
-        .map(|i| i.parse::<u64>())
-        .collect::<std::result::Result<_, _>>()
-        .map_err(|_| Error::Other("Workshop ids must be numeric".into()))?;
+fn connect() -> Result<steamworks::Client> {
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(std::path::Path::to_path_buf));
@@ -34,12 +27,24 @@ pub fn set_subscribed(ids: &[String], subscribe: bool) -> Result<Vec<SteamOutcom
             "steam_api64.dll is missing next to the app; reinstall RimSort-rs".into(),
         ));
     }
-    let client =
-        Client::init_app(RIMWORLD_APPID.parse::<u32>().unwrap_or(294_100)).map_err(|e| {
-            Error::Other(format!(
-                "Could not connect to Steam ({e}). Is the Steam client running and signed in?"
-            ))
-        })?;
+    steamworks::Client::init_app(RIMWORLD_APPID.parse::<u32>().unwrap_or(294_100)).map_err(|e| {
+        Error::Other(format!(
+            "Could not connect to Steam ({e}). Is the Steam client running and signed in?"
+        ))
+    })
+}
+
+#[cfg(windows)]
+pub fn set_subscribed(ids: &[String], subscribe: bool) -> Result<Vec<SteamOutcome>> {
+    use std::{sync::mpsc, time::Duration};
+    use steamworks::PublishedFileId;
+
+    let ids: Vec<u64> = ids
+        .iter()
+        .map(|i| i.parse::<u64>())
+        .collect::<std::result::Result<_, _>>()
+        .map_err(|_| Error::Other("Workshop ids must be numeric".into()))?;
+    let client = connect()?;
     let ugc = client.ugc();
     let mut out = Vec::new();
     for id in ids {
@@ -80,6 +85,25 @@ pub fn set_subscribed(ids: &[String], subscribe: bool) -> Result<Vec<SteamOutcom
 
 #[cfg(not(windows))]
 pub fn set_subscribed(_ids: &[String], _subscribe: bool) -> Result<Vec<SteamOutcome>> {
+    Err(Error::Other(
+        "Subscribing through Steam is only available on Windows for now".into(),
+    ))
+}
+
+/// Workshop ids the signed-in Steam account is subscribed to.
+#[cfg(windows)]
+pub fn subscribed_ids() -> Result<Vec<String>> {
+    let client = connect()?;
+    Ok(client
+        .ugc()
+        .subscribed_items(true)
+        .iter()
+        .map(|i| i.0.to_string())
+        .collect())
+}
+
+#[cfg(not(windows))]
+pub fn subscribed_ids() -> Result<Vec<String>> {
     Err(Error::Other(
         "Subscribing through Steam is only available on Windows for now".into(),
     ))
