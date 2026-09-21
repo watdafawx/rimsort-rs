@@ -14,6 +14,8 @@ export const prefs = $state({
   saveMarks: true,
   /** Rescan by itself when mods or ModsConfig.xml change on disk. */
   autoRefresh: true,
+  /** Show what Sort would change before applying it. */
+  previewSort: false,
   /** Row height preset for the mod lists. */
   density: 'normal' as 'compact' | 'normal' | 'comfortable',
 })
@@ -22,7 +24,13 @@ try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
   if (RECENT_CHOICES.includes(saved.recentDays)) prefs.recentDays = saved.recentDays
   if (['compact', 'normal', 'comfortable'].includes(saved.density)) prefs.density = saved.density
-  for (const k of ['sourceIcons', 'typeIcons', 'saveMarks', 'autoRefresh'] as const) {
+  for (const k of [
+    'sourceIcons',
+    'typeIcons',
+    'saveMarks',
+    'autoRefresh',
+    'previewSort',
+  ] as const) {
     if (typeof saved[k] === 'boolean') prefs[k] = saved[k]
   }
 } catch {
@@ -50,7 +58,7 @@ export function setDensity(d: 'compact' | 'normal' | 'comfortable') {
 }
 
 export function setPref(
-  key: 'sourceIcons' | 'typeIcons' | 'saveMarks' | 'autoRefresh',
+  key: 'sourceIcons' | 'typeIcons' | 'saveMarks' | 'autoRefresh' | 'previewSort',
   on: boolean,
 ) {
   prefs[key] = on

@@ -133,6 +133,13 @@ pub struct SortResultDto {
     pub changed: bool,
 }
 
+/// The order Sort would produce (empty when the rules contradict each other).
+#[derive(Debug, Clone, Serialize, Type)]
+pub struct SortPreviewDto {
+    pub ok: bool,
+    pub order: Vec<ModId>,
+}
+
 #[derive(Debug, Clone, Serialize, Type)]
 pub struct CycleDto {
     /// Package ids in the cycle.

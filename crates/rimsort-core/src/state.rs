@@ -588,15 +588,28 @@ impl AppState {
 
     // ── sort & save ─────────────────────────────────────────────────────
 
+    fn sort_settings(&self) -> SortSettings {
+        let s = self.settings.read().unwrap();
+        SortSettings {
+            dependencies_as_load_after: s.use_moddependencies_as_load_these_before,
+            use_alternative_ids: s.use_alternative_package_ids_as_satisfying_dependencies,
+            alphabetical: s.sorting_algorithm.eq_ignore_ascii_case("alphabetical"),
+        }
+    }
+
+    /// What Sort would produce, without touching the active list.
+    pub fn sort_preview(&self) -> crate::dto::SortPreviewDto {
+        let settings = self.sort_settings();
+        let s = self.session.read().unwrap();
+        let out = sort::sort_active(&s.index, &s.active.ids, settings);
+        crate::dto::SortPreviewDto {
+            ok: out.cycles.is_empty(),
+            order: out.order,
+        }
+    }
+
     pub fn sort_active(&self) -> SortResultDto {
-        let settings = {
-            let s = self.settings.read().unwrap();
-            SortSettings {
-                dependencies_as_load_after: s.use_moddependencies_as_load_these_before,
-                use_alternative_ids: s.use_alternative_package_ids_as_satisfying_dependencies,
-                alphabetical: s.sorting_algorithm.eq_ignore_ascii_case("alphabetical"),
-            }
-        };
+        let settings = self.sort_settings();
         let mut s = self.session.write().unwrap();
         let out = sort::sort_active(&s.index, &s.active.ids, settings);
         if !out.cycles.is_empty() {

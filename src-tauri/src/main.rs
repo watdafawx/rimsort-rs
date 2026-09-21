@@ -403,6 +403,12 @@ async fn get_dependents(state: St<'_>, id: ModId) -> Cmd<Vec<rimsort_core::dto::
 
 #[tauri::command]
 #[specta::specta]
+async fn sort_preview(state: St<'_>) -> Cmd<rimsort_core::dto::SortPreviewDto> {
+    Ok(state.sort_preview())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn folder_size(state: St<'_>, id: ModId) -> Cmd<Option<f64>> {
     let state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || state.folder_size(id).map(|n| n as f64))
@@ -488,6 +494,7 @@ fn builder() -> Builder<Wry> {
             steam_set_subscribed,
             steam_subscribed_ids,
             folder_size,
+            sort_preview,
             get_dependents,
             get_workshop_meta,
             start_workshop_sync,

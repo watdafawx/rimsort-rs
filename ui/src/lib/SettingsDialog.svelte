@@ -332,6 +332,14 @@
         <label class="check"
           ><input
             type="checkbox"
+            checked={prefs.previewSort}
+            onchange={(e) => setPref('previewSort', e.currentTarget.checked)}
+          />
+          {t('Preview what Sort will change before applying it')}</label
+        >
+        <label class="check"
+          ><input
+            type="checkbox"
             checked={prefs.autoRefresh}
             onchange={(e) => setPref('autoRefresh', e.currentTarget.checked)}
           />

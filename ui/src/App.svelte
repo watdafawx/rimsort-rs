@@ -37,6 +37,7 @@
   import { tip } from './lib/tip'
   import HoverCard from './lib/HoverCard.svelte'
   import PkgList from './lib/PkgList.svelte'
+  import SortPreview from './lib/SortPreview.svelte'
   import CommandPalette, { type PaletteAction } from './lib/CommandPalette.svelte'
   import newIcon from './assets/mod/new.png'
   import Duplicates from './lib/Duplicates.svelte'
@@ -94,6 +95,7 @@
   let showDownload = $state(false)
   let showSearch = $state(false)
   let showPalette = $state(false)
+  let showSortPreview = $state(false)
   /** Warnings-only filter of the Active list (set by clicking the status chips). */
   let activeWarnOnly = $state(false)
   let focusReq = $state<{ id: string; n: number } | null>(null)
@@ -361,9 +363,13 @@
     await call(commands.launchGame())
   }
 
+  /** Sort button: straight away, or through the preview when that setting is on. */
+  const sortClicked = () => (prefs.previewSort ? (showSortPreview = true) : sort())
+
   const paletteActions = $derived<PaletteAction[]>([
     { label: t('Rescan mods'), keys: 'F5', run: doRefresh },
-    { label: t('Sort active list'), run: sort },
+    { label: t('Sort active list'), run: sortClicked },
+    { label: t('Preview sort…'), run: () => (showSortPreview = true) },
     { label: t('Save load order'), keys: 'Ctrl+S', run: () => void trySave() },
     { label: t('Launch RimWorld'), run: () => void run() },
     { label: t('Undo'), keys: 'Ctrl+Z', run: undo },
@@ -474,7 +480,7 @@
       </button>
       <button
         id="sort"
-        onclick={sort}
+        onclick={sortClicked}
         disabled={!app.loaded}
         use:tip={{
           title: T('Sort active list'),
@@ -1132,6 +1138,7 @@
       onpickmod={pickFromPalette}
       onclose={() => (showPalette = false)}
     />{/if}
+  {#if showSortPreview}<SortPreview onclose={() => (showSortPreview = false)} />{/if}
   {#if showSearch}<SearchDialog onclose={() => (showSearch = false)} />{/if}
   {#if showTodds}<ToddsDialog onclose={() => (showTodds = false)} />{/if}
 

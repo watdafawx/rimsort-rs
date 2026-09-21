@@ -90,6 +90,7 @@ export const commands = {
 	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
 	steamSubscribedIds: () => typedError<string[], ErrorDto>(__TAURI_INVOKE("steam_subscribed_ids")),
 	folderSize: (id: ModId) => typedError<number | null, ErrorDto>(__TAURI_INVOKE("folder_size", { id })),
+	sortPreview: () => typedError<SortPreviewDto, ErrorDto>(__TAURI_INVOKE("sort_preview")),
 	getDependents: (id: ModId) => typedError<DependentDto[], ErrorDto>(__TAURI_INVOKE("get_dependents", { id })),
 	getWorkshopMeta: (id: string) => typedError<{
 	id?: string,
@@ -435,6 +436,12 @@ export type SettingsView = {
 	warning: string | null,
 	checks: PathCheck[],
 	game_version: string,
+};
+
+/**  The order Sort would produce (empty when the rules contradict each other). */
+export type SortPreviewDto = {
+	ok: boolean,
+	order: ModId[],
 };
 
 export type SortResultDto = {
