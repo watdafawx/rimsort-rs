@@ -16,7 +16,7 @@ export const commands = {
 	deleteInstance: (name: string) => typedError<null, ErrorDto>(__TAURI_INVOKE("delete_instance", { name })),
 	autodetectPaths: () => typedError<DetectedPaths, ErrorDto>(__TAURI_INVOKE("autodetect_paths")),
 	/**  Scan mods + read ModsConfig.xml in the background; refetch lists on the task's `finished` event. */
-	startScan: () => typedError<number, ErrorDto>(__TAURI_INVOKE("start_scan")),
+	startScan: (keepActive: boolean) => typedError<number, ErrorDto>(__TAURI_INVOKE("start_scan", { keepActive })),
 	getLists: () => typedError<ListsView, ErrorDto>(__TAURI_INVOKE("get_lists")),
 	getMod: (id: ModId) => typedError<{
 	id: ModId,

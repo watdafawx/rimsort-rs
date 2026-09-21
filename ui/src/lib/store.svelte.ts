@@ -140,13 +140,16 @@ export async function loadSettings() {
   app.settings = await call(commands.getSettings())
 }
 
-/** Rescan disk + reload ModsConfig.xml, then refresh both lists. */
-export async function refresh() {
+/**
+ * Rescan disk and refresh both lists. By default the active list is re-read from ModsConfig.xml
+ * (discarding unsaved edits); with `keep` the current active list survives the rescan.
+ */
+export async function refresh(keep = false) {
   if (app.scanning) return
   app.scanning = true
   external.changed = null
   try {
-    app.scanTask = await call(commands.startScan())
+    app.scanTask = await call(commands.startScan(keep))
     const t = await waitTask(app.scanTask)
     if (t.status !== 'finished') return
     const l = await call(commands.getLists())
@@ -157,8 +160,8 @@ export async function refresh() {
     app.scanMs = l.scan_ms
     app.duplicates = l.duplicate_package_ids
     app.communityRules = l.community_rules
-    app.dirty = false
-    undoStack.length = redoStack.length = 0
+    if (!keep) app.dirty = false
+    undoStack.length = redoStack.length = 0 // snapshots may reference mods that just changed
     syncDepth()
     app.loaded = true
     revalidate(0)
@@ -246,8 +249,7 @@ async function runJob(start: Promise<number>, doneText: string): Promise<boolean
   app.jobTask = 0
   if (t.status !== 'finished') return false
   toast(doneText, 4000)
-  if (!app.dirty) await refresh()
-  else external.changed = 'mods'
+  await refresh(app.dirty) // keep unsaved edits
   return true
 }
 

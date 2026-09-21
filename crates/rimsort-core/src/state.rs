@@ -242,7 +242,10 @@ impl AppState {
     // ── scan ────────────────────────────────────────────────────────────
 
     /// Scan disk and load `ModsConfig.xml` in the background; UI refetches lists when the task finishes.
-    pub fn start_scan(self: &Arc<Self>) -> Result<TaskId> {
+    ///
+    /// `keep_active`: rescan disk but keep the current in-memory active list (unsaved edits survive)
+    /// instead of re-reading `ModsConfig.xml`.
+    pub fn start_scan(self: &Arc<Self>, keep_active: bool) -> Result<TaskId> {
         let inst = self.current_instance()?;
         if inst.game_folder.is_empty() {
             return Err(Error::Other(
@@ -252,6 +255,10 @@ impl AppState {
         let settings = self.settings.read().unwrap().clone();
         let prefer_versioned = settings.prefer_versioned_about_tags;
         self.restart_watch(&inst);
+        let kept: Option<Vec<String>> = keep_active.then(|| {
+            let s = self.session.read().unwrap();
+            modsconfig::config_ids(&s.index, &s.active)
+        });
         let this = self.clone();
         Ok(self.tasks.spawn(move |ctx| {
             let game = PathBuf::from(&inst.game_folder);
@@ -273,10 +280,11 @@ impl AppState {
                     None
                 }
             };
-            let active = config
-                .as_ref()
-                .map(|c| modsconfig::resolve_active(&index, &c.active))
-                .unwrap_or_default();
+            let active = match (&kept, &config) {
+                (Some(ids), _) if !ids.is_empty() => modsconfig::resolve_active(&index, ids),
+                (_, Some(c)) => modsconfig::resolve_active(&index, &c.active),
+                _ => Default::default(),
+            };
             // Personal metadata: our file, else a one-time import from RimSort's aux DB.
             let meta_path = meta::meta_path(&inst.name);
             let meta = if meta_path.exists() {

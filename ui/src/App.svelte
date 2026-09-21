@@ -321,8 +321,14 @@
       {external.changed === 'config'
         ? 'ModsConfig.xml was changed outside RimSort-rs.'
         : 'Mods were added, removed or changed on disk.'}
-      {#if app.dirty}<span class="dim">(refreshing discards your unsaved changes)</span>{/if}
-      <button onclick={doRefresh}>Refresh</button>
+      {#if app.dirty && external.changed === 'config'}<span class="dim"
+          >(refreshing discards your unsaved changes)</span
+        >{/if}
+      {#if external.changed === 'mods' && app.dirty}
+        <button onclick={() => refresh(true)}>Rescan, keep my changes</button>
+      {:else}
+        <button onclick={doRefresh}>Refresh</button>
+      {/if}
       <button class="link" onclick={() => (external.changed = null)}>Dismiss</button>
     </div>
   {/if}

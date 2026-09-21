@@ -96,7 +96,7 @@ async fn autodetect_paths(state: St<'_>) -> Cmd<DetectedPaths> {
 /// Scan mods + read ModsConfig.xml in the background; refetch lists on the task's `finished` event.
 #[tauri::command]
 #[specta::specta]
-async fn start_scan(app: AppHandle, state: St<'_>) -> Cmd<TaskId> {
+async fn start_scan(app: AppHandle, state: St<'_>, keep_active: bool) -> Cmd<TaskId> {
     // Let the webview load preview images from the configured mod folders (and nothing else).
     let view = state.settings_view();
     if let Some(i) = view
@@ -110,7 +110,7 @@ async fn start_scan(app: AppHandle, state: St<'_>) -> Cmd<TaskId> {
             }
         }
     }
-    Ok(state.inner().start_scan()?)
+    Ok(state.inner().start_scan(keep_active)?)
 }
 
 #[tauri::command]
