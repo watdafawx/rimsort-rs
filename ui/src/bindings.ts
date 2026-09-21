@@ -86,6 +86,8 @@ export const commands = {
 	readPlayerLog: (offset: number | null) => typedError<LogChunk, ErrorDto>(__TAURI_INVOKE("read_player_log", { offset })),
 	launchGame: () => typedError<null, ErrorDto>(__TAURI_INVOKE("launch_game")),
 	gameRunning: () => typedError<boolean, ErrorDto>(__TAURI_INVOKE("game_running")),
+	/**  Subscribe to (or unsubscribe from) Workshop items in the Steam client. */
+	steamSetSubscribed: (ids: string[], subscribe: boolean) => typedError<SteamOutcome[], ErrorDto>(__TAURI_INVOKE("steam_set_subscribed", { ids, subscribe })),
 	latestSave: () => typedError<{
 	/**  File name without extension. */
 	name: string,
@@ -411,6 +413,12 @@ export type SortResultDto = {
 	/**  Cycles that block sorting when `ok` is false. */
 	cycles: CycleDto[],
 	changed: boolean,
+};
+
+export type SteamOutcome = {
+	id: string,
+	/**  None on success. */
+	error: string | null,
 };
 
 export type TaskEvent = { kind: "progress"; id: number; done: number; total: number; msg: string } | { kind: "finished"; id: number } | { kind: "cancelled"; id: number } | { kind: "failed"; id: number; error: ErrorDto } | 

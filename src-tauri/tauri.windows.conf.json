@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": {
+      "redist/win64/steam_api64.dll": "steam_api64.dll"
+    }
+  }
+}

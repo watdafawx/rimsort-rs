@@ -15,6 +15,7 @@ use specta_typescript::Typescript;
 use std::{path::PathBuf, sync::Arc};
 use tauri::{AppHandle, Manager, State, Wry};
 use tauri_specta::{Builder, Event, collect_commands, collect_events};
+mod steam;
 use tracing_subscriber::EnvFilter;
 
 type Cmd<T> = Result<T, ErrorDto>;
@@ -378,6 +379,16 @@ async fn latest_save(state: St<'_>) -> Cmd<Option<rimsort_core::saves::SaveInfo>
         .map_err(|e| rimsort_core::Error::Other(e.to_string()).into())
 }
 
+/// Subscribe to (or unsubscribe from) Workshop items in the Steam client.
+#[tauri::command]
+#[specta::specta]
+async fn steam_set_subscribed(ids: Vec<String>, subscribe: bool) -> Cmd<Vec<steam::SteamOutcome>> {
+    tauri::async_runtime::spawn_blocking(move || steam::set_subscribed(&ids, subscribe))
+        .await
+        .map_err(|e| rimsort_core::Error::Other(e.to_string()))?
+        .map_err(Into::into)
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn game_running(state: St<'_>) -> Cmd<bool> {
@@ -434,6 +445,7 @@ fn builder() -> Builder<Wry> {
             read_player_log,
             launch_game,
             game_running,
+            steam_set_subscribed,
             latest_save,
             open_folder,
             get_todds_options,

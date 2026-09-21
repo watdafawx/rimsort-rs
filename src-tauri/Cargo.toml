@@ -21,3 +21,6 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[target.'cfg(windows)'.dependencies]
+steamworks = "0.13.1"
