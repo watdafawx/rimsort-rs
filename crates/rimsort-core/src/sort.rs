@@ -344,23 +344,6 @@ pub fn sort_active(index: &ModIndex, active: &[ModId], settings: SortSettings) -
             .collect()
     };
     let active_deps = filter(&c.deps);
-    if settings.alphabetical {
-        let raw: HashMap<&str, &str> = active
-            .iter()
-            .filter_map(|id| index.get(*id).filter(|m| m.valid))
-            .map(|m| (m.package_id.as_str(), m.name.as_str()))
-            .collect();
-        let mut order: Vec<ModId> = alphabetical(&active_deps, &raw)
-            .iter()
-            .map(|pid| pid_to_id[pid.as_str()])
-            .collect();
-        let mut placed: HashSet<ModId> = order.iter().copied().collect();
-        order.extend(active.iter().copied().filter(|id| placed.insert(*id)));
-        return SortOutcome {
-            order,
-            cycles: vec![],
-        };
-    }
     let active_rev = filter(&c.rev);
 
     let expand = |known: &BTreeSet<String>, graph: &Graph| -> BTreeSet<String> {
@@ -379,7 +362,28 @@ pub fn sort_active(index: &ModIndex, active: &[ModId], settings: SortSettings) -
 
     let mut order: Vec<ModId> = Vec::with_capacity(active.len());
     let mut placed: HashSet<ModId> = HashSet::new();
+    // Raw (case-preserved) names for the alphabetical mode.
+    let raw: HashMap<&str, &str> = active
+        .iter()
+        .filter_map(|id| index.get(*id).filter(|m| m.valid))
+        .map(|m| (m.package_id.as_str(), m.name.as_str()))
+        .collect();
     for tier in [&t0, &t1, &t2, &t3] {
+        if settings.alphabetical {
+            // RimSort runs the alphabetical mode per tier too, then joins the tiers.
+            let tier_names: HashMap<&str, &str> = raw
+                .iter()
+                .filter(|(p, _)| tier.contains(**p))
+                .map(|(p, n)| (*p, *n))
+                .collect();
+            for pid in alphabetical(&subgraph(&active_deps, tier), &tier_names) {
+                let id = pid_to_id[pid.as_str()];
+                if placed.insert(id) {
+                    order.push(id);
+                }
+            }
+            continue;
+        }
         match levels(&subgraph(&active_deps, tier)) {
             Ok(lv) => {
                 for mut level in lv {

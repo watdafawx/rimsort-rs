@@ -155,6 +155,11 @@ fn sort_golden_configs() {
             _ => {}
         }
     }
+    if std::env::var_os("GOLDEN_ALPHA").is_some() {
+        let mut o = state.settings_view().options;
+        o.alphabetical_sort = true;
+        state.update_options(o).unwrap();
+    }
     let l = state.lists();
     let mut by_pid = std::collections::HashMap::new();
     for r in l.active.iter().chain(&l.inactive).filter(|r| r.valid) {
@@ -173,14 +178,7 @@ fn sort_golden_configs() {
             .split("<li>")
             .skip(1)
             .filter_map(|c| c.split("</li>").next())
-            .filter_map(|p| {
-                by_pid.get(
-                    &p.trim()
-                        .to_lowercase()
-                        .trim_end_matches("_steam")
-                        .to_owned(),
-                )
-            })
+            .filter_map(|p| by_pid.get(p.trim().to_lowercase().trim_end_matches("_steam")))
             .copied()
             .collect();
         state.set_active(ids);

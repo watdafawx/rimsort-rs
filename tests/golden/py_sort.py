@@ -87,7 +87,7 @@ def run(config_path):
         pid = str(raw).lower().removesuffix("_steam")
         if pid in by_pid:
             active_paths.append(sorted(by_pid[pid])[0])
-    ok, sorted_paths = Sorter(SortMethod.TOPOLOGICAL, compiled, mods, set(active_paths)).sort()
+    ok, sorted_paths = Sorter(SortMethod.ALPHABETICAL if os.environ.get("GOLDEN_ALPHA") else SortMethod.TOPOLOGICAL, compiled, mods, set(active_paths)).sort()
     return {
         "ok": ok,
         "before": [str(mods[p].package_id) for p in active_paths],

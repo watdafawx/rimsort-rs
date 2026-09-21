@@ -53,6 +53,7 @@ golden:
     node tests/golden/compare.mjs debug/py_sorted.json debug/rust_sorted.json
 
 # Golden sort on N shuffled/subset variants of your active list (seeded; slow: one Python scan)
+# (set GOLDEN_ALPHA=1 to compare the alphabetical mode instead)
 golden-multi n="12":
     node tests/golden/multi.mjs {{n}}
 
