@@ -378,6 +378,8 @@
           </dd>
           {#if detail.supported_versions.length}<dt>Supports</dt>
             <dd>{detail.supported_versions.join(', ')}</dd>{/if}
+          {#if detail.workshop_updated}<dt>Updated</dt>
+            <dd>{new Date(detail.workshop_updated * 1000).toLocaleDateString()}</dd>{/if}
           {#if detail.mod_version}<dt>Version</dt>
             <dd>{detail.mod_version}</dd>{/if}
           <dt>Path</dt>

@@ -18,6 +18,7 @@ pub mod rules;
 pub mod settings;
 pub mod sort;
 mod state;
+pub mod steamacf;
 pub mod steamcmd;
 mod task;
 pub mod validate;

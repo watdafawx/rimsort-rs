@@ -96,6 +96,8 @@ pub struct ModDetail {
     pub color: Option<String>,
     pub tags: Vec<String>,
     pub note: String,
+    /// When the installed Workshop version was published (unix seconds), if Steam's manifest knows.
+    pub workshop_updated: Option<u32>,
 }
 
 /// Personal color/tags/note for a mod.

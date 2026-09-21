@@ -297,6 +297,8 @@ impl AppState {
                 m
             };
             let mut rules = rules;
+            Arc::make_mut(&mut rules).workshop =
+                crate::steamacf::load(std::path::Path::new(&inst.workshop_folder));
             Arc::make_mut(&mut rules).ignored.extend(
                 meta.iter()
                     .filter(|(_, m)| m.ignore)
@@ -431,6 +433,12 @@ impl AppState {
                 .get(&m.package_id)
                 .map(|d| d.note.clone())
                 .unwrap_or_default(),
+            workshop_updated: m
+                .published_file_id
+                .as_ref()
+                .and_then(|p| s.rules.workshop.get(p))
+                .map(|t| t.updated)
+                .filter(|u| *u > 0),
             preview: Some(m.path.join("About").join("Preview.png"))
                 .filter(|p| p.is_file())
                 .map(|p| p.to_string_lossy().into_owned()),

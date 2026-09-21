@@ -41,6 +41,8 @@ export const commands = {
 	color: string | null,
 	tags: string[],
 	note: string,
+	/**  When the installed Workshop version was published (unix seconds), if Steam's manifest knows. */
+	workshop_updated: number | null,
 } | null, ErrorDto>(__TAURI_INVOKE("get_mod", { id })),
 	setActive: (ids: ModId[]) => typedError<null, ErrorDto>(__TAURI_INVOKE("set_active", { ids })),
 	getValidation: () => typedError<ValidationView, ErrorDto>(__TAURI_INVOKE("get_validation")),
@@ -230,6 +232,8 @@ export type ModDetail = {
 	color: string | null,
 	tags: string[],
 	note: string,
+	/**  When the installed Workshop version was published (unix seconds), if Steam's manifest knows. */
+	workshop_updated: number | null,
 };
 
 /**  Stable mod identity: uuid5 of the mod folder path, same across scans. */
@@ -360,7 +364,9 @@ export type WarningKind =
 /**  Mod doesn't list support for the running game version. */
 "VersionMismatch" | 
 /**  A maintained replacement exists: `other` = its Workshop id, `other_name` = "Name by Author". */
-"UseThisInstead";
+"UseThisInstead" | 
+/**  Steam knows a newer version than the installed one (not downloaded yet). */
+"WorkshopUpdate";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

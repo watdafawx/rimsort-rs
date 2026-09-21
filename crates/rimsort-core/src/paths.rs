@@ -31,13 +31,13 @@ pub struct PathCheck {
 // ── minimal VDF/ACF (Valve KeyValues) parser ─────────────────────────────
 
 #[derive(Debug, Clone)]
-enum Vdf {
+pub(crate) enum Vdf {
     Str(String),
     Map(Vec<(String, Vdf)>),
 }
 
 impl Vdf {
-    fn get(&self, key: &str) -> Option<&Vdf> {
+    pub(crate) fn get(&self, key: &str) -> Option<&Vdf> {
         match self {
             Vdf::Map(m) => m
                 .iter()
@@ -47,7 +47,7 @@ impl Vdf {
         }
     }
 
-    fn str(&self) -> Option<&str> {
+    pub(crate) fn str(&self) -> Option<&str> {
         match self {
             Vdf::Str(s) => Some(s),
             Vdf::Map(_) => None,
@@ -55,7 +55,7 @@ impl Vdf {
     }
 }
 
-fn parse_vdf(text: &str) -> Vdf {
+pub(crate) fn parse_vdf(text: &str) -> Vdf {
     #[derive(PartialEq)]
     enum Tok {
         S(String),

@@ -25,6 +25,8 @@ pub enum WarningKind {
     VersionMismatch,
     /// A maintained replacement exists: `other` = its Workshop id, `other_name` = "Name by Author".
     UseThisInstead,
+    /// Steam knows a newer version than the installed one (not downloaded yet).
+    WorkshopUpdate,
 }
 
 impl WarningKind {
@@ -201,6 +203,13 @@ pub fn validate(
         }
         if version_mismatch(m, &index.game_version, src) {
             push(WarningKind::VersionMismatch, "", "");
+        }
+        if m.published_file_id
+            .as_ref()
+            .and_then(|p| src.workshop.get(p))
+            .is_some_and(|t| t.outdated())
+        {
+            push(WarningKind::WorkshopUpdate, "", "");
         }
         if let Some(r) = m
             .published_file_id
@@ -454,6 +463,32 @@ mod tests {
         let w = run(mods, &["old", "fine"], &src);
         assert_eq!(w["old"], [WarningKind::UseThisInstead]);
         assert!(!w.contains_key("fine"));
+    }
+
+    #[test]
+    fn pending_workshop_update_warns() {
+        let mut src = RuleSources::default();
+        src.workshop.insert(
+            "111".into(),
+            crate::steamacf::WorkshopTimes {
+                updated: 100,
+                latest: 150,
+            },
+        );
+        src.workshop.insert(
+            "222".into(),
+            crate::steamacf::WorkshopTimes {
+                updated: 100,
+                latest: 100,
+            },
+        );
+        let mods = vec![
+            mk("old", |m| m.published_file_id = Some("111".into())),
+            mk("fresh", |m| m.published_file_id = Some("222".into())),
+        ];
+        let w = run(mods, &["old", "fresh"], &src);
+        assert_eq!(w["old"], [WarningKind::WorkshopUpdate]);
+        assert!(!w.contains_key("fresh"));
     }
 
     #[test]

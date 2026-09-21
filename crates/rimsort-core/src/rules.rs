@@ -151,6 +151,8 @@ pub struct RuleSources {
     pub no_version_warning: HashSet<String>,
     /// old Workshop id -> recommended replacement.
     pub replacements: HashMap<String, Replacement>,
+    /// Workshop id -> update times from Steam's manifest (filled at scan time, needs the workshop folder).
+    pub workshop: HashMap<String, crate::steamacf::WorkshopTimes>,
 }
 
 /// Our own writable copy of `file` (seeded from RimSort's on first write so existing rules carry over).

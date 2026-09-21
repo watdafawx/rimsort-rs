@@ -77,6 +77,8 @@ export function describe(w: Warning): string {
       return `Should load after: ${w.other_name}`
     case 'VersionMismatch':
       return 'Does not list support for this game version'
+    case 'WorkshopUpdate':
+      return 'A newer version is on the Workshop (Steam has not downloaded it yet)'
     case 'UseThisInstead':
       return `A maintained replacement exists: ${w.other_name}`
   }
